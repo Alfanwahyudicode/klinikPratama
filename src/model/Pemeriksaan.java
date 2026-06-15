@@ -23,7 +23,6 @@ public class Pemeriksaan {
     private String catatan;
     private BigDecimal biayaTindakan;
 
-    // ── Tambahan untuk tampilan (hasil JOIN, tidak disimpan ke tabel pemeriksaan) ──
     private String noRm;
     private String namaPasien;
     private String namaDokter;
