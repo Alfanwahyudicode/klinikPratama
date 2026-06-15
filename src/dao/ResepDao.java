@@ -210,12 +210,12 @@ public class ResepDao {
  
             ps.setInt(1, idPemeriksaan);
             try (ResultSet rs = ps.executeQuery()) {
-                return rs.next(); // ada baris berarti sudah ada resep
+                return rs.next(); 
             }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(null,
                 "Gagal validasi resep: " + e.getMessage());
-            return true; // anggap sudah ada agar tidak duplikat saat error
+            return true; 
         }
     }
  
