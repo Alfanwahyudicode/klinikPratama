@@ -25,7 +25,7 @@ import javax.swing.JOptionPane;
  */
 public class PemeriksaanDao {
 
-    // Ambil semua data pemeriksaan (join ke kunjungan, pasien, dokter)
+    // mengambil semua data pemeriksaan (join ke kunjungan, pasien, dokter)
     public List<Pemeriksaan> getAllPemeriksaan() {
         List<Pemeriksaan> list = new ArrayList<>();
         String sql = "SELECT pe.*, k.tgl_kunjungan, k.keluhan, "
