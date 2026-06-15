@@ -6,7 +6,6 @@ package dao;
 import koneksi.Koneksi;
 import model.Resep;
 import model.ResepDetail;
- 
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.PreparedStatement;
@@ -21,19 +20,8 @@ import javax.swing.JOptionPane;
  */
 public class ResepDao {
  private final ResepDetailDao detailDao = new ResepDetailDao();
- 
-    // =========================================================
-    // INSERT
-    // =========================================================
- 
-    /**
-     * Tambah resep baru.
-     * Validasi: satu pemeriksaan hanya boleh punya satu resep.
-     *
-     * @return id_resep yang di-generate DB, atau -1 jika gagal
-     */
+
     public int tambahResep(Resep r) {
-        // Validasi: 1 pemeriksaan hanya 1 resep
         if (sudahAdaResep(r.getIdPemeriksaan())) {
             JOptionPane.showMessageDialog(null,
                 "Pemeriksaan ini sudah memiliki resep!");
@@ -56,7 +44,7 @@ public class ResepDao {
                 try (ResultSet rs = ps.getGeneratedKeys()) {
                     if (rs.next()) {
                         int idBaru = rs.getInt(1);
-                        r.setIdResep(idBaru); // update objek agar caller bisa langsung pakai
+                        r.setIdResep(idBaru); 
                         return idBaru;
                     }
                 }
@@ -68,14 +56,6 @@ public class ResepDao {
         return -1;
     }
  
-    // =========================================================
-    // UPDATE
-    // =========================================================
- 
-    /**
-     * Ubah tanggal resep.
-     * (Data lain seperti id_pemeriksaan umumnya tidak diubah setelah dibuat.)
-     */
     public boolean updateResep(Resep r) {
         String sql = "UPDATE resep SET tgl_resep=? WHERE id_resep=?";
  
@@ -92,17 +72,8 @@ public class ResepDao {
             return false;
         }
     }
- 
-    // =========================================================
-    // DELETE
-    // =========================================================
- 
-    /**
-     * Hapus resep beserta semua detail obatnya.
-     * Urutan: hapus resep_detail dulu, baru hapus resep (referential integrity).
-     */
+
     public boolean hapusResep(int idResep) {
-        // hapus semua detail dulu
         detailDao.deleteByResepId(idResep);
  
         String sql = "DELETE FROM resep WHERE id_resep=?";
@@ -118,15 +89,7 @@ public class ResepDao {
             return false;
         }
     }
- 
-    // =========================================================
-    // SELECT – semua resep (untuk tabel di form utama)
-    // =========================================================
- 
-    /**
-     * Ambil semua resep, di-JOIN ke pemeriksaan, kunjungan, pasien, dan dokter.
-     * Field bantu (namaPasien, namaDokter, noRm, diagnosa) langsung diisi.
-     */
+
     public List<Resep> getAllResep() {
         List<Resep> list = new ArrayList<>();
  
@@ -152,14 +115,6 @@ public class ResepDao {
         }
         return list;
     }
- 
-    // =========================================================
-    // SELECT – cari resep berdasarkan keyword
-    // =========================================================
- 
-    /**
-     * Cari resep berdasarkan nama pasien atau nomor RM.
-     */
     public List<Resep> cariResep(String keyword) {
         List<Resep> list = new ArrayList<>();
  
@@ -191,17 +146,6 @@ public class ResepDao {
         return list;
     }
  
-    // =========================================================
-    // SELECT – satu resep lengkap dengan list detail-nya
-    // =========================================================
- 
-    /**
-     * Ambil satu resep berdasarkan id_resep,
-     * termasuk semua ResepDetail yang dimilikinya.
-     *
-     * @param idResep id resep yang dicari
-     * @return objek Resep lengkap, atau null jika tidak ditemukan
-     */
     public Resep getByIdResep(int idResep) {
         String sql = "SELECT r.id_resep, r.id_pemeriksaan, r.tgl_resep, "
                    + "       p.no_rm, p.nama_pasien, d.nama_dokter, pe.diagnosa "
@@ -219,7 +163,6 @@ public class ResepDao {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     Resep r = mapRowResep(rs);
-                    // langsung load detail-nya sekali juga
                     r.setListDetail(detailDao.getByResepId(idResep));
                     return r;
                 }
@@ -231,17 +174,6 @@ public class ResepDao {
         return null;
     }
  
-    // =========================================================
-    // SELECT – resep milik satu pemeriksaan
-    // =========================================================
- 
-    /**
-     * Ambil resep berdasarkan id_pemeriksaan.
-     * Dipakai untuk mengecek dan menampilkan resep di FormResep
-     * ketika user memilih pemeriksaan dari combobox.
-     *
-     * @return objek Resep, atau null jika pemeriksaan belum punya resep
-     */
     public Resep getByPemeriksaanId(int idPemeriksaan) {
         String sql = "SELECT r.id_resep, r.id_pemeriksaan, r.tgl_resep, "
                    + "       p.no_rm, p.nama_pasien, d.nama_dokter, pe.diagnosa "
@@ -269,16 +201,7 @@ public class ResepDao {
         }
         return null;
     }
- 
-    // =========================================================
-    // Validasi – cek apakah pemeriksaan sudah punya resep
-    // =========================================================
- 
-    /**
-     * Validasi: satu pemeriksaan hanya boleh memiliki satu resep.
-     *
-     * @return true jika pemeriksaan sudah memiliki resep
-     */
+
     public boolean sudahAdaResep(int idPemeriksaan) {
         String sql = "SELECT id_resep FROM resep WHERE id_pemeriksaan = ?";
  
@@ -296,14 +219,6 @@ public class ResepDao {
         }
     }
  
-    /**
-     * Ambil daftar pemeriksaan yang BELUM mempunyai resep.
-     * Digunakan untuk mengisi ComboBox di FormResep agar user
-     * hanya bisa membuat resep dari pemeriksaan yang memang belum ada resepnya.
-     *
-     * Field yang dikembalikan: id_pemeriksaan, no_rm, nama_pasien, diagnosa
-     * (disimpan sebagai objek Resep tanpa id_resep / tgl_resep karena belum ada).
-     */
     public List<Resep> getPemeriksaanBelumResep() {
         List<Resep> list = new ArrayList<>();
  
@@ -336,10 +251,6 @@ public class ResepDao {
         }
         return list;
     }
- 
-    // =========================================================
-    // Helper – mapping ResultSet → Resep (tanpa list detail)
-    // =========================================================
  
     private Resep mapRowResep(ResultSet rs) throws SQLException {
         Resep r = new Resep();
