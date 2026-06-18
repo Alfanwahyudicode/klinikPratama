@@ -18,6 +18,7 @@ public class Pasien {
     private String jenisKelamin;
     private String alamat;
     private String noHp;
+    private String tanggalLahir;
 
     public int getIdPasien() {
         return idPasien;
@@ -65,6 +66,9 @@ public class Pasien {
 
     public void setNoHp(String noHp) {
         this.noHp = noHp;
+    }
+    public String getTanggalLahir () {
+        return tanggalLahir;
     }
 }
     
