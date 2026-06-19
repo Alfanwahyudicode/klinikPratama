@@ -46,23 +46,6 @@ Aplikasi Klinik Sederhana dibuat menggunakan konsep **Object-Oriented Programmin
 
 ---
 
-## 📂 Struktur Sistem
-
-```
-KlinikSederhana
-│
-├── src/
-│   ├── backend/
-│   ├── frontend/
-│   └── database/
-│
-├── nbproject/
-├── database.sql
-└── README.md
-```
-
----
-
 ## 🚀 Cara Menjalankan Program
 
 1. Clone repository
