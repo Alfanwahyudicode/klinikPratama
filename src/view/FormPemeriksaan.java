@@ -4,19 +4,107 @@
  */
 package view;
 
+import dao.PemeriksaanDao;
+import model.Pemeriksaan;
+import java.math.BigDecimal;
+import java.util.List;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+
 /**
  *
  * @author VanZ
  */
 public class FormPemeriksaan extends javax.swing.JFrame {
-    
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FormPemeriksaan.class.getName());
+
+    private PemeriksaanDao dao = new PemeriksaanDao();
+    private List<Object[]> listKunjungan;
+    private List<Object[]> listDataTabel;
+    private int idPemeriksaanTerpilih = 0;
 
     /**
      * Creates new form FormPemeriksaan
      */
     public FormPemeriksaan() {
         initComponents();
+        setupTabel();
+        loadComboKunjungan();
+        loadTabelPemeriksaan();
+    }
+
+    private void setupTabel() {
+        DefaultTableModel model = new DefaultTableModel(
+                new Object[]{"No", "No RM", "Pasien", "Dokter", "Diagnosa", "Biaya"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return false;
+            }
+        };
+        tblPemeriksaan.setModel(model);
+    }
+
+    private void loadComboKunjungan() {
+        listKunjungan = dao.getKunjunganBelumPeriksa();
+        cmbKunjungan.removeAllItems();
+
+        if (listKunjungan.isEmpty()) {
+            cmbKunjungan.addItem("Tidak ada kunjungan yang belum diperiksa");
+        } else {
+            for (Object[] k : listKunjungan) {
+                cmbKunjungan.addItem(k[1] + " - " + k[2] + " - " + k[3]);
+            }
+        }
+        tampilkanInfoKunjungan();
+    }
+
+    private void tampilkanInfoKunjungan() {
+        if (listKunjungan == null || listKunjungan.isEmpty()) {
+            lblInfoKunjungan.setText("<html>No RM: -<br>Pasien: -<br>Dokter: -<br>Keluhan: -</html>");
+            return;
+        }
+
+        int index = cmbKunjungan.getSelectedIndex();
+        if (index >= 0 && index < listKunjungan.size()) {
+            Object[] k = listKunjungan.get(index);
+            lblInfoKunjungan.setText("<html>No RM: " + k[1]
+                    + "<br>Pasien: " + k[2]
+                    + "<br>Dokter: " + k[3]
+                    + "<br>Keluhan: " + k[4] + "</html>");
+        }
+    }
+
+    private void loadTabelPemeriksaan() {
+        listDataTabel = dao.getDataTabel();
+        isiTabel(listDataTabel);
+    }
+
+    private void isiTabel(List<Object[]> list) {
+        DefaultTableModel model = (DefaultTableModel) tblPemeriksaan.getModel();
+        model.setRowCount(0);
+
+        int no = 1;
+        for (Object[] r : list) {
+            model.addRow(new Object[]{
+                no++,
+                r[1],
+                r[2],
+                r[3],
+                r[4],
+                r[6]
+            });
+        }
+    }
+
+    private void bersihkanForm() {
+        txtDiagnosa.setText("");
+        txtTindakan.setText("");
+        txtCatatan.setText("");
+        txtBiayaTindakan.setText("");
+        idPemeriksaanTerpilih = 0;
+
+        if (cmbKunjungan.getItemCount() > 0) {
+            cmbKunjungan.setSelectedIndex(0);
+        }
     }
 
     /**
@@ -28,21 +116,368 @@ public class FormPemeriksaan extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jScrollPane4 = new javax.swing.JScrollPane();
+        jTable1 = new javax.swing.JTable();
+        cmbKunjungan = new javax.swing.JComboBox<>();
+        jLabel1 = new javax.swing.JLabel();
+        lblInfoKunjungan = new javax.swing.JLabel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txtDiagnosa = new javax.swing.JTextArea();
+        jLabel2 = new javax.swing.JLabel();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        txtTindakan = new javax.swing.JTextArea();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        txtCatatan = new javax.swing.JTextArea();
+        jLabel5 = new javax.swing.JLabel();
+        txtBiayaTindakan = new javax.swing.JTextField();
+        btnSimpan = new javax.swing.JButton();
+        btnUbah = new javax.swing.JButton();
+        btnHapus = new javax.swing.JButton();
+        btnBatal = new javax.swing.JButton();
+        btnCari = new javax.swing.JButton();
+        txtCari = new javax.swing.JTextField();
+        jScrollPane5 = new javax.swing.JScrollPane();
+        tblPemeriksaan = new javax.swing.JTable();
+
+        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane4.setViewportView(jTable1);
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        cmbKunjungan.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cmbKunjungan.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                cmbKunjunganActionPerformed(evt);
+            }
+        });
+
+        jLabel1.setText("Pilih Kunjungan (Belum Periksa)");
+
+        txtDiagnosa.setColumns(20);
+        txtDiagnosa.setRows(5);
+        jScrollPane1.setViewportView(txtDiagnosa);
+
+        jLabel2.setText("Diagnosa");
+
+        txtTindakan.setColumns(20);
+        txtTindakan.setRows(5);
+        jScrollPane2.setViewportView(txtTindakan);
+
+        jLabel3.setText("Tindakan");
+
+        jLabel4.setText("Catatan");
+
+        txtCatatan.setColumns(20);
+        txtCatatan.setRows(5);
+        jScrollPane3.setViewportView(txtCatatan);
+
+        jLabel5.setText("Biaya Tindakan");
+
+        txtBiayaTindakan.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtBiayaTindakanActionPerformed(evt);
+            }
+        });
+
+        btnSimpan.setText("Simpan");
+        btnSimpan.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSimpanActionPerformed(evt);
+            }
+        });
+
+        btnUbah.setText("Ubah");
+        btnUbah.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUbahActionPerformed(evt);
+            }
+        });
+
+        btnHapus.setText("Hapus");
+        btnHapus.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnHapusActionPerformed(evt);
+            }
+        });
+
+        btnBatal.setText("Batal");
+        btnBatal.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnBatalActionPerformed(evt);
+            }
+        });
+
+        btnCari.setText("Cari");
+        btnCari.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCariActionPerformed(evt);
+            }
+        });
+
+        txtCari.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtCariActionPerformed(evt);
+            }
+        });
+
+        tblPemeriksaan.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null}
+            },
+            new String [] {
+                "No", "No RM", "Pasien", "Dokter", "Diagnosa", "Biaya Tindakan"
+            }
+        ));
+        tblPemeriksaan.setGridColor(new java.awt.Color(0, 0, 0));
+        tblPemeriksaan.setShowGrid(true);
+        tblPemeriksaan.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tblPemeriksaanMouseClicked(evt);
+            }
+        });
+        jScrollPane5.setViewportView(tblPemeriksaan);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                        .addComponent(lblInfoKunjungan, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jScrollPane2)
+                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 214, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGap(259, 259, 259))
+                        .addComponent(cmbKunjungan, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 491, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(btnSimpan)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnUbah)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnHapus)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnBatal)
+                        .addGap(18, 18, 18)
+                        .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnCari))
+                    .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 491, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 111, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtBiayaTindakan, javax.swing.GroupLayout.PREFERRED_SIZE, 491, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 491, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jLabel1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(cmbKunjungan, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel4))
+                .addGap(13, 13, 13)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jLabel5)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(txtBiayaTindakan, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(lblInfoKunjungan, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(31, 31, 31)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnSimpan)
+                    .addComponent(btnUbah)
+                    .addComponent(btnHapus)
+                    .addComponent(btnBatal)
+                    .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnCari))
+                .addGap(7, 7, 7)
+                .addComponent(jLabel2)
+                .addGap(18, 18, 18)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jLabel3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane5, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void txtBiayaTindakanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtBiayaTindakanActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtBiayaTindakanActionPerformed
+
+    private void txtCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtCariActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtCariActionPerformed
+
+    private void cmbKunjunganActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbKunjunganActionPerformed
+        // TODO add your handling code here:
+        tampilkanInfoKunjungan();
+    }//GEN-LAST:event_cmbKunjunganActionPerformed
+
+    private void btnSimpanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSimpanActionPerformed
+        if (listKunjungan == null || listKunjungan.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Tidak ada kunjungan yang bisa diperiksa.");
+            return;
+        }
+
+        if (txtDiagnosa.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Diagnosa tidak boleh kosong!");
+            return;
+        }
+
+        BigDecimal biaya;
+        try {
+            biaya = new BigDecimal(txtBiayaTindakan.getText().trim());
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Biaya tindakan harus berupa angka!");
+            return;
+        }
+
+        int index = cmbKunjungan.getSelectedIndex();
+        Object[] kunjunganTerpilih = listKunjungan.get(index);
+
+        Pemeriksaan pe = new Pemeriksaan();
+        pe.setIdKunjungan((Integer) kunjunganTerpilih[0]);
+        pe.setDiagnosa(txtDiagnosa.getText().trim());
+        pe.setTindakan(txtTindakan.getText().trim());
+        pe.setCatatan(txtCatatan.getText().trim());
+        pe.setBiayaTindakan(biaya);
+
+        if (dao.tambahPemeriksaan(pe)) {
+            JOptionPane.showMessageDialog(this, "Data pemeriksaan berhasil disimpan.");
+            bersihkanForm();
+            loadComboKunjungan();
+            loadTabelPemeriksaan();
+        }
+    }//GEN-LAST:event_btnSimpanActionPerformed
+
+    private void btnUbahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUbahActionPerformed
+        // TODO add your handling code here:
+
+        if (idPemeriksaanTerpilih == 0) {
+            JOptionPane.showMessageDialog(this, "Pilih data pada tabel terlebih dahulu.");
+            return;
+        }
+
+        if (txtDiagnosa.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Diagnosa tidak boleh kosong!");
+            return;
+        }
+
+        BigDecimal biaya;
+        try {
+            biaya = new BigDecimal(txtBiayaTindakan.getText().trim());
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Biaya tindakan harus berupa angka!");
+            return;
+        }
+
+        Pemeriksaan pe = new Pemeriksaan();
+        pe.setIdPemeriksaan(idPemeriksaanTerpilih);
+        pe.setDiagnosa(txtDiagnosa.getText().trim());
+        pe.setTindakan(txtTindakan.getText().trim());
+        pe.setCatatan(txtCatatan.getText().trim());
+        pe.setBiayaTindakan(biaya);
+
+        if (dao.updatePemeriksaan(pe)) {
+            JOptionPane.showMessageDialog(this, "Data pemeriksaan berhasil diubah.");
+            bersihkanForm();
+            loadTabelPemeriksaan();
+        }
+    }//GEN-LAST:event_btnUbahActionPerformed
+
+    private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
+        // TODO add your handling code here:
+        if (idPemeriksaanTerpilih == 0) {
+            JOptionPane.showMessageDialog(this, "Pilih data pada tabel terlebih dahulu.");
+            return;
+        }
+
+        int konfirmasi = JOptionPane.showConfirmDialog(this,
+                "Yakin hapus data pemeriksaan ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+
+        if (konfirmasi == JOptionPane.YES_OPTION) {
+            if (dao.hapusPemeriksaan(idPemeriksaanTerpilih)) {
+                JOptionPane.showMessageDialog(this, "Data berhasil dihapus.");
+                bersihkanForm();
+                loadComboKunjungan();
+                loadTabelPemeriksaan();
+            }
+        }
+    }//GEN-LAST:event_btnHapusActionPerformed
+
+    private void btnBatalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBatalActionPerformed
+        // TODO add your handling code here:
+        bersihkanForm();
+    }//GEN-LAST:event_btnBatalActionPerformed
+
+    private void btnCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCariActionPerformed
+        String keyword = txtCari.getText().trim();
+
+        if (keyword.isEmpty()) {
+            loadTabelPemeriksaan();
+        } else {
+            listDataTabel = dao.cariDataTabel(keyword);
+            isiTabel(listDataTabel);
+        }
+    }//GEN-LAST:event_btnCariActionPerformed
+
+    private void tblPemeriksaanMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblPemeriksaanMouseClicked
+        int row = tblPemeriksaan.getSelectedRow();
+
+        if (row >= 0 && row < listDataTabel.size()) {
+            Object[] p = listDataTabel.get(row);
+
+            idPemeriksaanTerpilih = (Integer) p[0];
+
+            // Ambil data lengkap (termasuk catatan) dari database via id
+            Pemeriksaan pe = dao.getPemeriksaanById(idPemeriksaanTerpilih);
+            if (pe != null) {
+                txtDiagnosa.setText(pe.getDiagnosa());
+                txtTindakan.setText(pe.getTindakan());
+                txtCatatan.setText(pe.getCatatan());
+                txtBiayaTindakan.setText(pe.getBiayaTindakan() == null ? "" : pe.getBiayaTindakan().toPlainString());
+            }
+
+            lblInfoKunjungan.setText("<html>No RM: " + p[1]
+                    + "<br>Pasien: " + p[2]
+                    + "<br>Dokter: " + p[3] + "</html>");
+        }
+    }//GEN-LAST:event_tblPemeriksaanMouseClicked
 
     /**
      * @param args the command line arguments
@@ -61,7 +496,8 @@ public class FormPemeriksaan extends javax.swing.JFrame {
                 }
             }
         } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(FormPemeriksaan.class.getName())
+                    .log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
 
@@ -70,5 +506,29 @@ public class FormPemeriksaan extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnBatal;
+    private javax.swing.JButton btnCari;
+    private javax.swing.JButton btnHapus;
+    private javax.swing.JButton btnSimpan;
+    private javax.swing.JButton btnUbah;
+    private javax.swing.JComboBox<String> cmbKunjungan;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
+    private javax.swing.JScrollPane jScrollPane5;
+    private javax.swing.JTable jTable1;
+    private javax.swing.JLabel lblInfoKunjungan;
+    private javax.swing.JTable tblPemeriksaan;
+    private javax.swing.JTextField txtBiayaTindakan;
+    private javax.swing.JTextField txtCari;
+    private javax.swing.JTextArea txtCatatan;
+    private javax.swing.JTextArea txtDiagnosa;
+    private javax.swing.JTextArea txtTindakan;
     // End of variables declaration//GEN-END:variables
 }
