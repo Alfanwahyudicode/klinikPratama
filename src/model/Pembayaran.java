@@ -13,42 +13,78 @@ public class Pembayaran {
     private BigDecimal totalTindakan;
     private BigDecimal totalObat;
     private BigDecimal totalBayar;
-    private String metodeBayar; 
+    private String metodeBayar;
     private String tglBayar;
 
-    public Pembayaran() {}
-
-    public Pembayaran(int idKunjungan, BigDecimal totalTindakan,
-                      BigDecimal totalObat, BigDecimal totalBayar,
-                      String metodeBayar, String tglBayar) {
-        this.idKunjungan   = idKunjungan;
-        this.totalTindakan = totalTindakan;
-        this.totalObat     = totalObat;
-        this.totalBayar    = totalBayar;
-        this.metodeBayar   = metodeBayar;
-        this.tglBayar      = tglBayar;
+    public Pembayaran() {
     }
 
-    public int getIdBayar() { return idBayar; }
-    public void setIdBayar(int idBayar) { this.idBayar = idBayar; }
+    public Pembayaran(int idKunjungan, BigDecimal totalTindakan,
+            BigDecimal totalObat, BigDecimal totalBayar,
+            String metodeBayar, String tglBayar) {
+        this.idKunjungan = idKunjungan;
+        this.totalTindakan = totalTindakan;
+        this.totalObat = totalObat;
+        this.totalBayar = totalBayar;
+        this.metodeBayar = metodeBayar;
+        this.tglBayar = tglBayar;
+    }
 
-    public int getIdKunjungan() { return idKunjungan; }
-    public void setIdKunjungan(int idKunjungan) { this.idKunjungan = idKunjungan; }
+    public int getIdBayar() {
+        return idBayar;
+    }
 
-    public BigDecimal getTotalTindakan() { return totalTindakan; }
-    public void setTotalTindakan(BigDecimal totalTindakan) { this.totalTindakan = totalTindakan; }
+    public void setIdBayar(int idBayar) {
+        this.idBayar = idBayar;
+    }
 
-    public BigDecimal getTotalObat() { return totalObat; }
-    public void setTotalObat(BigDecimal totalObat) { this.totalObat = totalObat; }
+    public int getIdKunjungan() {
+        return idKunjungan;
+    }
 
-    public BigDecimal getTotalBayar() { return totalBayar; }
-    public void setTotalBayar(BigDecimal totalBayar) { this.totalBayar = totalBayar; }
+    public void setIdKunjungan(int idKunjungan) {
+        this.idKunjungan = idKunjungan;
+    }
 
-    public String getMetodeBayar() { return metodeBayar; }
-    public void setMetodeBayar(String metodeBayar) { this.metodeBayar = metodeBayar; }
+    public BigDecimal getTotalTindakan() {
+        return totalTindakan;
+    }
 
-    public String getTglBayar() { return tglBayar; }
-    public void setTglBayar(String tglBayar) { this.tglBayar = tglBayar; }
+    public void setTotalTindakan(BigDecimal totalTindakan) {
+        this.totalTindakan = totalTindakan;
+    }
+
+    public BigDecimal getTotalObat() {
+        return totalObat;
+    }
+
+    public void setTotalObat(BigDecimal totalObat) {
+        this.totalObat = totalObat;
+    }
+
+    public BigDecimal getTotalBayar() {
+        return totalBayar;
+    }
+
+    public void setTotalBayar(BigDecimal totalBayar) {
+        this.totalBayar = totalBayar;
+    }
+
+    public String getMetodeBayar() {
+        return metodeBayar;
+    }
+
+    public void setMetodeBayar(String metodeBayar) {
+        this.metodeBayar = metodeBayar;
+    }
+
+    public String getTglBayar() {
+        return tglBayar;
+    }
+
+    public void setTglBayar(String tglBayar) {
+        this.tglBayar = tglBayar;
+    }
 
     @Override
     public String toString() {
