@@ -127,7 +127,7 @@ public class FormPembayaran extends javax.swing.JFrame {
             }
         });
 
-        cmbMetodeBayar.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Cash", "Transfer", "Qris", "Debit" }));
+        cmbMetodeBayar.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Tunai", "Transfer", "Qris", "Debit" }));
 
         btnCariKunjungan.setText("Cari");
         btnCariKunjungan.addActionListener(new java.awt.event.ActionListener() {
