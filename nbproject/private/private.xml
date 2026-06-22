@@ -3,10 +3,10 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/VanZ/Documents/NetBeansProjects/klinikPratama/tugas-Uas-Pbo-Klinik-Pratama-/src/model/Obat.java</file>
-            <file>file:/C:/Users/VanZ/Documents/NetBeansProjects/klinikPratama/tugas-Uas-Pbo-Klinik-Pratama-/src/koneksi/Koneksi.java</file>
-            <file>file:/C:/Users/VanZ/Documents/NetBeansProjects/klinikPratama/tugas-Uas-Pbo-Klinik-Pratama-/src/model/Pasien.java</file>
-            <file>file:/C:/Users/VanZ/Documents/NetBeansProjects/klinikPratama/tugas-Uas-Pbo-Klinik-Pratama-/src/dao/ObatDao.java</file>
+            <file>file:/C:/Users/WINDOWS/Documents/NetBeansProjects/klinikPratama/src/view/FormPemeriksaan.java</file>
+            <file>file:/C:/Users/WINDOWS/Documents/NetBeansProjects/klinikPratama/src/view/FormPembayaran.java</file>
+            <file>file:/C:/Users/WINDOWS/Documents/NetBeansProjects/klinikPratama/src/dao/KunjunganDao.java</file>
+            <file>file:/C:/Users/WINDOWS/Documents/NetBeansProjects/klinikPratama/nbproject/project.properties</file>
         </group>
     </open-files>
 </project-private>
