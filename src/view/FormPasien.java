@@ -1,33 +1,18 @@
 package view;
-
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
-
-
 import dao.PasienDao;
 import java.awt.event.ActionEvent;
-import java.awt.event.MouseEvent;
 import model.Pasien;
 import java.util.List;
-
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
-
 
 /**
  *
  * @author VanZ
  */
+public class FormPasien extends javax.swing.JFrame {
 
-
-public class FormPasien extends javax.swing.JFrame { 
-
-    private static final java.util.logging.Logger logger = 
+    private static final java.util.logging.Logger logger =
         java.util.logging.Logger.getLogger(FormPasien.class.getName());
+
     private final PasienDao pasienDao = new PasienDao();
     private int selectedIdPasien = -1;
 
@@ -41,11 +26,6 @@ public class FormPasien extends javax.swing.JFrame {
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 jTable2MouseClicked(evt);
             }
-
-            private void jTable2MouseClicked(MouseEvent evt) {
-                throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-            }
-
         });
 
         // Listener button yang belum ada di initComponents
@@ -88,7 +68,7 @@ public class FormPasien extends javax.swing.JFrame {
     }
 
     // ===================== KLIK BARIS TABEL =====================
-    private void jTable2MouseClicked() {
+    private void jTable2MouseClicked(java.awt.event.MouseEvent evt) {
         int baris = jTable2.getSelectedRow();
         if (baris >= 0) {
             selectedIdPasien = Integer.parseInt(jTable2.getValueAt(baris, 1).toString());
@@ -101,7 +81,7 @@ public class FormPasien extends javax.swing.JFrame {
     }
 
     // ===================== BUTTON TAMBAH =====================
-    private void jButton2ActionPerformed(ActionEvent evt) {
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {
         String nama = jTextField8.getText().trim();
         String tglLahir = jTextField2.getText().trim();
         String jk = jComboBox1.getSelectedItem().toString().trim();
@@ -127,82 +107,31 @@ public class FormPasien extends javax.swing.JFrame {
         }
     }
 
-    // ===================== BUTTON UBAH =====================
-    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {
+    // ===================== BUTTON HAPUS =====================
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {
         if (selectedIdPasien == -1) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Pilih data yang ingin diubah!");
+            javax.swing.JOptionPane.showMessageDialog(this, "Pilih data yang ingin dihapus!");
             return;
         }
 
-        Pasien p = new Pasien();
-        p.setIdPasien(selectedIdPasien);
-        p.setNamaPasien(jTextField8.getText().trim());
-        p.setTanggalLahir(jTextField2.getText().trim());
-        p.setJenisKelamin(jComboBox1.getSelectedItem().toString().trim());
-        p.setAlamat(jTextField5.getText().trim());
-        p.setNoTelp(jTextField3.getText().trim());
+        int konfirmasi = javax.swing.JOptionPane.showConfirmDialog(this,
+            "Yakin ingin menghapus data ini?", "Konfirmasi",
+            javax.swing.JOptionPane.YES_NO_OPTION);
 
-        if (pasienDao.updatePasien(p)) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Data berhasil diubah!");
-            tampilData();
-            clearForm();
-        }
-    }
-        // ===================== BUTTON HAPUS =====================
-        // ===================== BUTTON BATAL =====================
-        // ===================== BUTTON CARI =====================
-        // ===================== METHOD KOSONG LAINNYA =====================
-        // ===================== METHOD KOSONG LAINNYA =====================
-
-
-
-
-    // ===================== MAIN METHOD =====================
-    public static void main(String args[]) {
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
+        if (konfirmasi == javax.swing.JOptionPane.YES_OPTION) {
+            if (pasienDao.hapusPasien(selectedIdPasien)) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Data berhasil dihapus!");
+                tampilData();
+                clearForm();
             }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
         }
     }
-        // Variables declaration - do not modify
 
-    private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
-    private javax.swing.JComboBox<String> jComboBox1;
-    private javax.swing.JTable jTable2;
-    private javax.swing.JTextField jTextField2;
-    private javax.swing.JTextField jTextField3;
-    private javax.swing.JTextField jTextField4;
-    private javax.swing.JTextField jTextField5;
-    private javax.swing.JTextField jTextField6;
-    private javax.swing.JTextField jTextField8;
-    // End of variables declaration
-    // End of variables declaration
+    // ===================== BUTTON BATAL =====================
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {
+        clearForm();
+    }
 
-        private void jButton3ActionPerformed(ActionEvent evt) {
-            throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-        }
-
-        private void jButton4ActionPerformed(ActionEvent evt) {
-            throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-        }
-
-
-} // ← tutup class di sini, paling bawah sendiri
-
-    
-          
-    
-
-
-        
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -448,7 +377,26 @@ public class FormPasien extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField3ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-        // TODO add your handling code here:
+        String keyword = jTextField6.getText().trim();
+        javax.swing.table.DefaultTableModel model =
+            (javax.swing.table.DefaultTableModel) jTable2.getModel();
+        model.setRowCount(0);
+        List<Pasien> hasil = pasienDao.cariPasien(keyword);
+        int no = 1;
+        for (Pasien p : hasil) {
+            model.addRow(new Object[]{
+                no++,
+                p.getIdPasien(),
+                p.getNamaPasien(),
+                p.getJenisKelamin(),
+                p.getTanggalLahir(),
+                p.getAlamat(),
+                p.getNoTelp()
+            });
+        }
+        if (hasil.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Data tidak ditemukan!");
+        }
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jTextField6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField6ActionPerformed
@@ -456,7 +404,22 @@ public class FormPasien extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField6ActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
-        // TODO add your handling code here:
+        if (selectedIdPasien == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Pilih data yang ingin diubah!");
+            return;
+        }
+        Pasien p = new Pasien();
+        p.setIdPasien(selectedIdPasien);
+        p.setNamaPasien(jTextField8.getText().trim());
+        p.setTanggalLahir(jTextField2.getText().trim());
+        p.setJenisKelamin(jComboBox1.getSelectedItem().toString().trim());
+        p.setAlamat(jTextField5.getText().trim());
+        p.setNoTelp(jTextField3.getText().trim());
+        if (pasienDao.updatePasien(p)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Data berhasil diubah!");
+            tampilData();
+            clearForm();
+        }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
@@ -465,9 +428,6 @@ public class FormPasien extends javax.swing.JFrame {
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -481,6 +441,7 @@ public class FormPasien extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
+        java.awt.EventQueue.invokeLater(() -> new FormPasien().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -512,3 +473,4 @@ public class FormPasien extends javax.swing.JFrame {
     private javax.swing.JTextField jTextField8;
     // End of variables declaration//GEN-END:variables
 
+}
