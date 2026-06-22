@@ -13,16 +13,16 @@ import javax.swing.table.DefaultTableModel;
  *
  * @author VanZ
  */
-public class Formdokter extends javax.swing.JFrame {
+public class FormDokter extends javax.swing.JFrame {
 
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Formdokter.class.getName());
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FormDokter.class.getName());
 
     private final DokterDao dokterDao = new DokterDao();
 
     /**
-     * Creates new form Formdokter
+     * Creates new form FormDokter
      */
-    public Formdokter() {
+    public FormDokter() {
         initComponents();
         tampilkanDataTabel(); // Memanggil fungsi tabel saat form dibuka
     }
@@ -402,7 +402,7 @@ public class Formdokter extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new Formdokter().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new FormDokter().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
