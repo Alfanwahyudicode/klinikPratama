@@ -20,6 +20,10 @@ import javax.swing.JOptionPane;
  */
 public class PasienDao {
 
+    public static List<Pasien> getAll() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
 // Ambil semua data pasien
     public List<Pasien> getAllPasien() {
         List<Pasien> list = new ArrayList<>();
@@ -37,6 +41,7 @@ public class PasienDao {
                 p.setJenisKelamin(rs.getString("jenis_kelamin"));
                 p.setAlamat(rs.getString("alamat"));
                 p.setNoTelp(rs.getString("no_telp"));
+                
                 list.add(p);
             }
         } catch (SQLException e) {
