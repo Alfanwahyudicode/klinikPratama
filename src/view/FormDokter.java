@@ -4,19 +4,73 @@
  */
 package view;
 
+import dao.DokterDao;
+import model.Dokter;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+
 /**
  *
  * @author VanZ
  */
-public class FormDokter extends javax.swing.JFrame {
-    
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FormDokter.class.getName());
+public class Formdokter extends javax.swing.JFrame {
+
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(Formdokter.class.getName());
+
+    private final DokterDao dokterDao = new DokterDao();
 
     /**
-     * Creates new form FormDokter
+     * Creates new form Formdokter
      */
-    public FormDokter() {
+    public Formdokter() {
         initComponents();
+        tampilkanDataTabel(); // Memanggil fungsi tabel saat form dibuka
+    }
+
+    private void bersihkanForm() {
+        txtKodeDokter.setText("");
+        txtNamaDokter.setText("");
+        cmbSpesialis.setSelectedIndex(0);
+        txtTelepon.setText("");
+        txtCari.setText("");
+        tblDokter.clearSelection();
+    }
+
+    private void tampilkanDataTabel() {
+        String[] kolom = {"No", "Kode", "Nama Dokter", "Spesialis", "No Telp"};
+        javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(null, kolom);
+
+        int no = 1;
+        for (Dokter d : dokterDao.getAllDokter()) {
+            model.addRow(new Object[]{no++, d.getKodeDokter(), d.getNamaDokter(), d.getSpesialisasi(), d.getNoTelp()});
+        }
+        tblDokter.setModel(model);
+    }
+
+    // Cari idDokter berdasarkan kode dokter yang dipilih pada tabel
+    private int cariIdBerdasarkanKode(String kodeDokter) {
+        for (Dokter d : dokterDao.getAllDokter()) {
+            if (d.getKodeDokter().equals(kodeDokter)) {
+                return d.getIdDokter();
+            }
+        }
+        return -1;
+    }
+
+    private void cariData() {
+        String keyword = txtCari.getText().trim();
+        String[] kolom = {"No", "Kode", "Nama Dokter", "Spesialis", "No Telp"};
+        javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(null, kolom);
+
+        java.util.List<Dokter> list = keyword.isEmpty()
+                ? dokterDao.getAllDokter()
+                : dokterDao.cariDokter(keyword);
+
+        int no = 1;
+        for (Dokter d : list) {
+            model.addRow(new Object[]{no++, d.getKodeDokter(), d.getNamaDokter(), d.getSpesialisasi(), d.getNoTelp()});
+        }
+        tblDokter.setModel(model);
     }
 
     /**
@@ -28,32 +82,31 @@ public class FormDokter extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPane1 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
-        jLabel2 = new javax.swing.JLabel();
-        txtKodeDokter = new javax.swing.JTextField();
-        txtSpesialisasi = new javax.swing.JTextField();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel4 = new javax.swing.JLabel();
-        txtNamaDokter = new javax.swing.JTextField();
-        jLabel5 = new javax.swing.JLabel();
-        txtNoTelp = new javax.swing.JTextField();
-        btnTambah = new javax.swing.JButton();
-        btnUbah = new javax.swing.JButton();
-        btnHapus = new javax.swing.JButton();
-        btnBatal = new javax.swing.JButton();
-        txtCari = new javax.swing.JTextField();
         btnCari = new javax.swing.JButton();
-        jScrollPane2 = new javax.swing.JScrollPane();
+        txtKodeDokter = new javax.swing.JTextField();
+        txtNamaDokter = new javax.swing.JTextField();
+        cmbSpesialis = new javax.swing.JComboBox<>();
+        jLabel5 = new javax.swing.JLabel();
+        btnSimpan = new javax.swing.JButton();
+        btnUbah = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
+        btnHapus = new javax.swing.JButton();
+        jScrollPane4 = new javax.swing.JScrollPane();
         tblDokter = new javax.swing.JTable();
-
-        jTextArea1.setColumns(20);
-        jTextArea1.setRows(5);
-        jScrollPane1.setViewportView(jTextArea1);
+        btnBatal = new javax.swing.JButton();
+        jLabel3 = new javax.swing.JLabel();
+        txtCari = new javax.swing.JTextField();
+        txtTelepon = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jLabel2.setText("Nama Dokter");
+        btnCari.setText("Cari");
+        btnCari.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnCariActionPerformed(evt);
+            }
+        });
 
         txtKodeDokter.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -61,15 +114,31 @@ public class FormDokter extends javax.swing.JFrame {
             }
         });
 
-        jLabel3.setText("Kode Dokter");
+        txtNamaDokter.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtNamaDokterActionPerformed(evt);
+            }
+        });
 
-        jLabel4.setText("Spesialisasi");
+        cmbSpesialis.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "[-- Pilih --]", "Umum", "Anak", "Penyakit Dalam", "Gigi" }));
 
-        jLabel5.setText("No Telp");
+        jLabel5.setText("No Telepon");
 
-        btnTambah.setText("Tambah");
+        btnSimpan.setText("Simpan");
+        btnSimpan.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnSimpanActionPerformed(evt);
+            }
+        });
 
         btnUbah.setText("Ubah");
+        btnUbah.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnUbahActionPerformed(evt);
+            }
+        });
+
+        jLabel1.setText("Kode Dokter");
 
         btnHapus.setText("Hapus");
         btnHapus.addActionListener(new java.awt.event.ActionListener() {
@@ -78,23 +147,47 @@ public class FormDokter extends javax.swing.JFrame {
             }
         });
 
-        btnBatal.setText("Batal");
-
-        btnCari.setText("Cari");
-
         tblDokter.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null},
-                {null, null, null, null}
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null},
+                {null, null, null, null, null}
             },
             new String [] {
-                "No", "Kode Dokter", "Nama", "Spesialisasi"
+                "No", "Kode", "Nama Dokter", "Spesialis", "No Telepon"
             }
         ));
-        tblDokter.setShowGrid(true);
-        jScrollPane2.setViewportView(tblDokter);
+        tblDokter.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tblDokterMouseClicked(evt);
+            }
+        });
+        jScrollPane4.setViewportView(tblDokter);
+
+        btnBatal.setText("Batal");
+        btnBatal.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnBatalActionPerformed(evt);
+            }
+        });
+
+        jLabel3.setText("Spesialis");
+
+        txtCari.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtCariActionPerformed(evt);
+            }
+        });
+
+        txtTelepon.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtTeleponActionPerformed(evt);
+            }
+        });
+
+        jLabel2.setText("Nama Dokter");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -103,86 +196,189 @@ public class FormDokter extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(txtCari)
-                            .addGap(109, 109, 109))
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                        .addGroup(layout.createSequentialGroup()
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addGroup(layout.createSequentialGroup()
-                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addComponent(jLabel5)
-                                        .addComponent(jLabel3))
-                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                                .addGroup(layout.createSequentialGroup()
-                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                        .addComponent(txtNoTelp, javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addGroup(layout.createSequentialGroup()
-                                            .addGap(0, 0, Short.MAX_VALUE)
-                                            .addComponent(txtKodeDokter, javax.swing.GroupLayout.PREFERRED_SIZE, 170, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                    .addGap(99, 99, 99)))
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jLabel2)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(btnBatal)
-                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                        .addComponent(jLabel4)
-                                        .addComponent(txtNamaDokter)
-                                        .addComponent(txtSpesialisasi, javax.swing.GroupLayout.DEFAULT_SIZE, 170, Short.MAX_VALUE))
-                                    .addComponent(btnCari)))))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(btnTambah)
-                        .addGap(49, 49, 49)
+                        .addComponent(btnSimpan)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnUbah)
-                        .addGap(53, 53, 53)
-                        .addComponent(btnHapus)))
-                .addContainerGap(203, Short.MAX_VALUE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnHapus)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnBatal)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(txtCari, javax.swing.GroupLayout.DEFAULT_SIZE, 149, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnCari, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane4)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                    .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, 144, Short.MAX_VALUE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(cmbSpesialis, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(txtTelepon)))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtNamaDokter))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 144, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtKodeDokter)))
+                        .addContainerGap())))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(jLabel2))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addComponent(jLabel1)
+                    .addComponent(txtKodeDokter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(9, 9, 9)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtKodeDokter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2)
                     .addComponent(txtNamaDokter, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(26, 26, 26)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel4)
-                    .addComponent(jLabel5))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                    .addComponent(jLabel3)
+                    .addComponent(cmbSpesialis, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(txtSpesialisasi, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtNoTelp, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(32, 32, 32)
+                    .addComponent(jLabel5)
+                    .addComponent(txtTelepon, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnTambah)
+                    .addComponent(btnSimpan)
                     .addComponent(btnUbah)
                     .addComponent(btnHapus)
-                    .addComponent(btnBatal))
-                .addGap(28, 28, 28)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnBatal)
                     .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnCari))
                 .addGap(18, 18, 18)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(63, Short.MAX_VALUE))
+                .addComponent(jScrollPane4, javax.swing.GroupLayout.PREFERRED_SIZE, 365, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(37, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btnHapusActionPerformed
-
     private void txtKodeDokterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtKodeDokterActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtKodeDokterActionPerformed
+
+    private void txtNamaDokterActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtNamaDokterActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtNamaDokterActionPerformed
+
+    private void btnSimpanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSimpanActionPerformed
+        // TODO add your handling code here:
+        String kodeDokter = txtKodeDokter.getText().trim();
+        String nama = txtNamaDokter.getText().trim();
+        String telp = txtTelepon.getText().trim();
+
+        if (kodeDokter.isEmpty() || nama.isEmpty() || cmbSpesialis.getSelectedIndex() == 0 || telp.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Semua data dokter wajib diisi!");
+            return;
+        }
+        Dokter dokter = new Dokter();
+        dokter.setKodeDokter(kodeDokter);
+        dokter.setNamaDokter(nama);
+        dokter.setSpesialisasi(cmbSpesialis.getSelectedItem().toString());
+        dokter.setNoTelp(telp);
+
+        if (dokterDao.tambahDokter(dokter)) {
+            tampilkanDataTabel();
+            bersihkanForm();
+        }
+    }//GEN-LAST:event_btnSimpanActionPerformed
+
+    private void btnUbahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUbahActionPerformed
+        // TODO add your handling code here:
+        int baris = tblDokter.getSelectedRow();
+        if (baris == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Pilih data dokter pada tabel terlebih dahulu!");
+            return;
+        }
+
+        String kodeDokter = txtKodeDokter.getText().trim();
+        String nama = txtNamaDokter.getText().trim();
+        String telp = txtTelepon.getText().trim();
+
+        if (kodeDokter.isEmpty() || nama.isEmpty() || cmbSpesialis.getSelectedIndex() == 0 || telp.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Semua data dokter wajib diisi!");
+            return;
+        }
+
+        String kodeAsli = tblDokter.getValueAt(baris, 1).toString();
+        int idDokter = cariIdBerdasarkanKode(kodeAsli);
+        if (idDokter == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Data dokter tidak ditemukan!");
+            return;
+        }
+
+        Dokter dokter = new Dokter();
+        dokter.setIdDokter(idDokter);
+        dokter.setKodeDokter(kodeDokter);
+        dokter.setNamaDokter(nama);
+        dokter.setSpesialisasi(cmbSpesialis.getSelectedItem().toString());
+        dokter.setNoTelp(telp);
+
+        if (dokterDao.updateDokter(dokter)) {
+            tampilkanDataTabel();
+            bersihkanForm();
+        }
+    }//GEN-LAST:event_btnUbahActionPerformed
+
+    private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
+        // TODO add your handling code here:
+        int baris = tblDokter.getSelectedRow();
+        if (baris == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Pilih data dokter yang ingin dihapus!");
+            return;
+        }
+        int konfirmasi = javax.swing.JOptionPane.showConfirmDialog(this, "Hapus data dokter ini?", "Konfirmasi", javax.swing.JOptionPane.YES_NO_OPTION);
+        if (konfirmasi == javax.swing.JOptionPane.YES_OPTION) {
+            String kodeAsli = tblDokter.getValueAt(baris, 1).toString();
+            int idDokter = cariIdBerdasarkanKode(kodeAsli);
+            if (idDokter != -1) {
+                dokterDao.hapusDokter(idDokter);
+            }
+
+            tampilkanDataTabel();
+            bersihkanForm();
+        }
+    }//GEN-LAST:event_btnHapusActionPerformed
+
+    private void tblDokterMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblDokterMouseClicked
+        // TODO add your handling code here:
+        int baris = tblDokter.getSelectedRow();
+        if (baris != -1) {
+            txtKodeDokter.setText(tblDokter.getValueAt(baris, 1).toString());
+            txtNamaDokter.setText(tblDokter.getValueAt(baris, 2).toString());
+            cmbSpesialis.setSelectedItem(tblDokter.getValueAt(baris, 3).toString());
+            txtTelepon.setText(tblDokter.getValueAt(baris, 4).toString());
+        }
+    }//GEN-LAST:event_tblDokterMouseClicked
+
+    private void btnBatalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBatalActionPerformed
+        // TODO add your handling code here:
+        bersihkanForm();
+    }//GEN-LAST:event_btnBatalActionPerformed
+
+    private void txtCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtCariActionPerformed
+        // TODO add your handling code here:
+        cariData();
+    }//GEN-LAST:event_txtCariActionPerformed
+
+    private void btnCariActionPerformed(java.awt.event.ActionEvent evt) {
+        cariData();
+    }
+
+    private void txtTeleponActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTeleponActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtTeleponActionPerformed
 
     /**
      * @param args the command line arguments
@@ -206,27 +402,25 @@ public class FormDokter extends javax.swing.JFrame {
         //</editor-fold>
 
         /* Create and display the form */
-        java.awt.EventQueue.invokeLater(() -> new FormDokter().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new Formdokter().setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnBatal;
     private javax.swing.JButton btnCari;
     private javax.swing.JButton btnHapus;
-    private javax.swing.JButton btnTambah;
+    private javax.swing.JButton btnSimpan;
     private javax.swing.JButton btnUbah;
+    private javax.swing.JComboBox<String> cmbSpesialis;
+    private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
-    private javax.swing.JTextArea jTextArea1;
+    private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JTable tblDokter;
     private javax.swing.JTextField txtCari;
     private javax.swing.JTextField txtKodeDokter;
     private javax.swing.JTextField txtNamaDokter;
-    private javax.swing.JTextField txtNoTelp;
-    private javax.swing.JTextField txtSpesialisasi;
+    private javax.swing.JTextField txtTelepon;
     // End of variables declaration//GEN-END:variables
 }
