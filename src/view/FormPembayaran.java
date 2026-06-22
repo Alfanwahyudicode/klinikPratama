@@ -121,6 +121,11 @@ public class FormPembayaran extends javax.swing.JFrame {
         });
 
         txtIdBayar.setEnabled(false);
+        txtIdBayar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtIdBayarActionPerformed(evt);
+            }
+        });
 
         cmbMetodeBayar.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Cash", "Transfer", "Qris", "Debit" }));
 
@@ -419,6 +424,10 @@ public class FormPembayaran extends javax.swing.JFrame {
         });
     }
     }//GEN-LAST:event_btnCariActionPerformed
+
+    private void txtIdBayarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtIdBayarActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtIdBayarActionPerformed
 
     /**
      * @param args the command line arguments
