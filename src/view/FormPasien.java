@@ -1,29 +1,135 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
- */
 package view;
+import dao.PasienDao;
+import java.awt.event.ActionEvent;
+import model.Pasien;
+import java.util.List;
 
 /**
  *
  * @author VanZ
  */
 public class FormPasien extends javax.swing.JFrame {
-    
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FormPasien.class.getName());
 
-    /**
-     * Creates new form FormPasien
-     */
+    private static final java.util.logging.Logger logger =
+        java.util.logging.Logger.getLogger(FormPasien.class.getName());
+
+    private final PasienDao pasienDao = new PasienDao();
+    private int selectedIdPasien = -1;
+
     public FormPasien() {
         initComponents();
-jTable1.getColumnModel().getColumn(0).setPreferredWidth(30);   // No
-jTable1.getColumnModel().getColumn(1).setPreferredWidth(80);   // No RM
-jTable1.getColumnModel().getColumn(2).setPreferredWidth(150);  // Nama
-jTable1.getColumnModel().getColumn(3).setPreferredWidth(40);   // JK
-jTable1.getColumnModel().getColumn(4).setPreferredWidth(100);  // Tgl Lahir
-jTable1.getColumnModel().getColumn(5).setPreferredWidth(150);  // Alamat
-jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
+        tampilData();
+
+        // Listener klik tabel
+        jTable2.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jTable2MouseClicked(evt);
+            }
+        });
+
+        // Listener button yang belum ada di initComponents
+        jButton2.addActionListener(evt -> jButton2ActionPerformed(evt));
+        jButton3.addActionListener(evt -> jButton3ActionPerformed(evt));
+        jButton4.addActionListener(evt -> jButton4ActionPerformed(evt));
+    }
+
+    // ===================== TAMPIL DATA =====================
+    private void tampilData() {
+        javax.swing.table.DefaultTableModel model =
+            (javax.swing.table.DefaultTableModel) jTable2.getModel();
+        model.setRowCount(0);
+
+        List<Pasien> list = pasienDao.getAllPasien();
+        int no = 1;
+        for (Pasien p : list) {
+            model.addRow(new Object[]{
+                no++,
+                p.getIdPasien(),
+                p.getNamaPasien(),
+                p.getJenisKelamin(),
+                p.getTanggalLahir(),
+                p.getAlamat(),
+                p.getNoTelp()
+            });
+        }
+    }
+
+    // ===================== CLEAR FORM =====================
+    private void clearForm() {
+        jTextField4.setText("");  // nomor kamar
+        jTextField8.setText("");  // nama pasien
+        jTextField2.setText("");  // tanggal lahir
+        jTextField5.setText("");  // alamat
+        jTextField3.setText("");  // no telp
+        jTextField6.setText("");  // cari
+        jComboBox1.setSelectedIndex(0);
+        selectedIdPasien = -1;
+    }
+
+    // ===================== KLIK BARIS TABEL =====================
+    private void jTable2MouseClicked(java.awt.event.MouseEvent evt) {
+        int baris = jTable2.getSelectedRow();
+        if (baris >= 0) {
+            selectedIdPasien = Integer.parseInt(jTable2.getValueAt(baris, 1).toString());
+            jTextField8.setText(jTable2.getValueAt(baris, 2).toString());
+            jComboBox1.setSelectedItem(jTable2.getValueAt(baris, 3).toString());
+            jTextField2.setText(jTable2.getValueAt(baris, 4).toString());
+            jTextField5.setText(jTable2.getValueAt(baris, 5).toString());
+            jTextField3.setText(jTable2.getValueAt(baris, 6).toString());
+        }
+    }
+
+    // ===================== BUTTON TAMBAH =====================
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {
+        String nama = jTextField8.getText().trim();
+        String tglLahir = jTextField2.getText().trim();
+        String jk = jComboBox1.getSelectedItem().toString().trim();
+        String alamat = jTextField5.getText().trim();
+        String noTelp = jTextField3.getText().trim();
+
+        if (nama.isEmpty() || tglLahir.isEmpty() || alamat.isEmpty() || noTelp.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Semua field harus diisi!");
+            return;
+        }
+
+        Pasien p = new Pasien();
+        p.setNamaPasien(nama);
+        p.setTanggalLahir(tglLahir);
+        p.setJenisKelamin(jk);
+        p.setAlamat(alamat);
+        p.setNoTelp(noTelp);
+
+        if (pasienDao.tambahPasien(p)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Data berhasil ditambahkan!");
+            tampilData();
+            clearForm();
+        }
+    }
+
+    // ===================== BUTTON HAPUS =====================
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {
+        if (selectedIdPasien == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Pilih data yang ingin dihapus!");
+            return;
+        }
+
+        int konfirmasi = javax.swing.JOptionPane.showConfirmDialog(this,
+            "Yakin ingin menghapus data ini?", "Konfirmasi",
+            javax.swing.JOptionPane.YES_NO_OPTION);
+
+        if (konfirmasi == javax.swing.JOptionPane.YES_OPTION) {
+            if (pasienDao.hapusPasien(selectedIdPasien)) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Data berhasil dihapus!");
+                tampilData();
+                clearForm();
+            }
+        }
+    }
+
+    // ===================== BUTTON BATAL =====================
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {
+        clearForm();
     }
 
     /**
@@ -39,7 +145,6 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         jLabel1 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
         jTextField2 = new javax.swing.JTextField();
         jTextField3 = new javax.swing.JTextField();
         jButton1 = new javax.swing.JButton();
@@ -61,6 +166,7 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
         jLabel10 = new javax.swing.JLabel();
         jScrollPane2 = new javax.swing.JScrollPane();
         jTable2 = new javax.swing.JTable();
+        jTextField8 = new javax.swing.JTextField();
 
         jLabel2.setText("jLabel2");
 
@@ -88,12 +194,6 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jTextField1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextField1ActionPerformed(evt);
-            }
-        });
-
         jTextField3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jTextField3ActionPerformed(evt);
@@ -101,6 +201,11 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
         });
 
         jButton1.setText("ubah");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
 
         jButton2.setText("tambah");
 
@@ -187,10 +292,11 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                                 .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 111, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(164, 164, 164))
-                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 97, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(jTextField3, javax.swing.GroupLayout.PREFERRED_SIZE, 143, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addComponent(jTextField8, javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jTextField2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 143, Short.MAX_VALUE))))
                     .addGroup(layout.createSequentialGroup()
                         .addContainerGap()
                         .addComponent(jButton1)
@@ -201,8 +307,8 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
                         .addGap(18, 18, 18)
                         .addComponent(jButton4)
                         .addGap(26, 26, 26)
-                        .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 255, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 113, Short.MAX_VALUE)
+                        .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 334, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 34, Short.MAX_VALUE)
                         .addComponent(jButton5)
                         .addGap(80, 80, 80))
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING))
@@ -216,23 +322,24 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
                     .addComponent(jLabel3)
                     .addComponent(jLabel5)
                     .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(15, 15, 15)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
-                    .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(12, 12, 12)
-                        .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(15, 15, 15)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel1)
+                            .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(18, 18, 18)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jTextField8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(12, 12, 12)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(24, 24, 24)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel8)
                     .addComponent(jLabel9)
@@ -249,7 +356,7 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
                     .addComponent(jButton4)
                     .addComponent(jButton5)
                     .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 16, Short.MAX_VALUE)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
@@ -265,21 +372,55 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField4ActionPerformed
 
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
-
     private void jTextField3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField3ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField3ActionPerformed
 
     private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
-        // TODO add your handling code here:
+        String keyword = jTextField6.getText().trim();
+        javax.swing.table.DefaultTableModel model =
+            (javax.swing.table.DefaultTableModel) jTable2.getModel();
+        model.setRowCount(0);
+        List<Pasien> hasil = pasienDao.cariPasien(keyword);
+        int no = 1;
+        for (Pasien p : hasil) {
+            model.addRow(new Object[]{
+                no++,
+                p.getIdPasien(),
+                p.getNamaPasien(),
+                p.getJenisKelamin(),
+                p.getTanggalLahir(),
+                p.getAlamat(),
+                p.getNoTelp()
+            });
+        }
+        if (hasil.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Data tidak ditemukan!");
+        }
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jTextField6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField6ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField6ActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        if (selectedIdPasien == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Pilih data yang ingin diubah!");
+            return;
+        }
+        Pasien p = new Pasien();
+        p.setIdPasien(selectedIdPasien);
+        p.setNamaPasien(jTextField8.getText().trim());
+        p.setTanggalLahir(jTextField2.getText().trim());
+        p.setJenisKelamin(jComboBox1.getSelectedItem().toString().trim());
+        p.setAlamat(jTextField5.getText().trim());
+        p.setNoTelp(jTextField3.getText().trim());
+        if (pasienDao.updatePasien(p)) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Data berhasil diubah!");
+            tampilData();
+            clearForm();
+        }
+    }//GEN-LAST:event_jButton1ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -287,9 +428,6 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
     public static void main(String args[]) {
         /* Set the Nimbus look and feel */
         //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-         */
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
@@ -327,11 +465,12 @@ jTable1.getColumnModel().getColumn(6).setPreferredWidth(100);  // No Telp
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
     private javax.swing.JTable jTable2;
-    private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
     private javax.swing.JTextField jTextField3;
     private javax.swing.JTextField jTextField4;
     private javax.swing.JTextField jTextField5;
     private javax.swing.JTextField jTextField6;
+    private javax.swing.JTextField jTextField8;
     // End of variables declaration//GEN-END:variables
+
 }
