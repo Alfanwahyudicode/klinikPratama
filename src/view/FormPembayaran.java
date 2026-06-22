@@ -27,8 +27,34 @@ public class FormPembayaran extends javax.swing.JFrame {
         initComponents();
         kosongkanForm();
         tampilkanData();
+        tambahListenerAutoHitung();
     }
     
+    private void tambahListenerAutoHitung() {
+        txtTotalTindakan.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungTotalBayar(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungTotalBayar(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungTotalBayar(); }
+        });
+        txtTotalObat.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungTotalBayar(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungTotalBayar(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungTotalBayar(); }
+        });
+    }
+
+    private void hitungTotalBayar() {
+        try {
+            String tindakanStr = txtTotalTindakan.getText().trim();
+            String obatStr     = txtTotalObat.getText().trim();
+            BigDecimal tindakan = tindakanStr.isEmpty() ? BigDecimal.ZERO : new BigDecimal(tindakanStr);
+            BigDecimal obat     = obatStr.isEmpty()     ? BigDecimal.ZERO : new BigDecimal(obatStr);
+            txtTotalBayar.setText(tindakan.add(obat).toPlainString());
+        } catch (NumberFormatException ex) {
+            // abaikan jika input belum valid
+        }
+    }
+
     public void tampilkanData() {
     DefaultTableModel model = (DefaultTableModel) tblPembayaran.getModel();
     model.setRowCount(0);
