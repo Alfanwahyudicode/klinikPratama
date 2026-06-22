@@ -1,11 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 import java.math.BigDecimal;
@@ -22,12 +14,6 @@ public class Pemeriksaan {
     private String tindakan;
     private String catatan;
     private BigDecimal biayaTindakan;
-
-    private String noRm;
-    private String namaPasien;
-    private String namaDokter;
-    private String tglKunjungan;
-    private String keluhan;
 
     public Pemeriksaan() {}
 
@@ -58,19 +44,4 @@ public class Pemeriksaan {
 
     public BigDecimal getBiayaTindakan() { return biayaTindakan; }
     public void setBiayaTindakan(BigDecimal biayaTindakan) { this.biayaTindakan = biayaTindakan; }
-
-    public String getNoRm() { return noRm; }
-    public void setNoRm(String noRm) { this.noRm = noRm; }
-
-    public String getNamaPasien() { return namaPasien; }
-    public void setNamaPasien(String namaPasien) { this.namaPasien = namaPasien; }
-
-    public String getNamaDokter() { return namaDokter; }
-    public void setNamaDokter(String namaDokter) { this.namaDokter = namaDokter; }
-
-    public String getTglKunjungan() { return tglKunjungan; }
-    public void setTglKunjungan(String tglKunjungan) { this.tglKunjungan = tglKunjungan; }
-
-    public String getKeluhan() { return keluhan; }
-    public void setKeluhan(String keluhan) { this.keluhan = keluhan; }
 }

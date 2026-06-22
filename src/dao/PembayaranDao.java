@@ -88,7 +88,6 @@ public class PembayaranDao {
         return list;
     }
 
-    // Ambil pembayaran berdasarkan ID
     public Pembayaran getById(int idBayar) {
         Pembayaran p = new Pembayaran();
         String sql = "SELECT * FROM pembayaran WHERE id_bayar = ?";
@@ -115,8 +114,6 @@ public class PembayaranDao {
         return p;
     }
 
-    // Ambil nama pasien berdasarkan id_kunjungan
-    // untuk auto-fill di form
     public String getNamaPasienByKunjungan(int idKunjungan) {
         String nama = "";
         String sql = "SELECT ps.nama_pasien "
@@ -140,8 +137,7 @@ public class PembayaranDao {
         return nama;
     }
 
-    // Ambil total biaya tindakan dari pemeriksaan
-    // berdasarkan id_kunjungan
+
     public BigDecimal getTotalTindakanByKunjungan(int idKunjungan) {
         BigDecimal total = BigDecimal.ZERO;
         String sql = "SELECT SUM(biaya_tindakan) AS total "
@@ -164,8 +160,6 @@ public class PembayaranDao {
         return total;
     }
 
-    // Ambil total biaya obat dari resep_detail
-    // berdasarkan id_kunjungan
     public BigDecimal getTotalObatByKunjungan(int idKunjungan) {
         BigDecimal total = BigDecimal.ZERO;
         String sql = "SELECT SUM(rd.subtotal) AS total "
@@ -190,7 +184,6 @@ public class PembayaranDao {
         return total;
     }
 
-    // Tambah pembayaran baru
     public boolean tambahPembayaran(Pembayaran p) {
         String sql = "INSERT INTO pembayaran "
                    + "(id_kunjungan, total_tindakan, total_obat, "
@@ -215,7 +208,6 @@ public class PembayaranDao {
         }
     }
 
-    // Update data pembayaran
     public boolean updatePembayaran(Pembayaran p) {
         String sql = "UPDATE pembayaran SET "
                    + "id_kunjungan=?, total_tindakan=?, total_obat=?, "
@@ -241,7 +233,6 @@ public class PembayaranDao {
         }
     }
 
-    // Hapus pembayaran
     public boolean hapusPembayaran(int idBayar) {
         String sql = "DELETE FROM pembayaran WHERE id_bayar=?";
 

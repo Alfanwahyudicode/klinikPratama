@@ -90,14 +90,10 @@ public class ObatDao {
         try (Connection conn = Koneksi.getKoneksi();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, o.getKodeObat());
             ps.setString(2, o.getNamaObat());
-            ps.setString(3, o.getJenis());
             ps.setString(4, o.getSatuan());
             ps.setInt(5, o.getStok());
-            ps.setBigDecimal(6, o.getHargaBeli());
             ps.setBigDecimal(7, o.getHargaJual());
-            ps.setString(8, o.getKeterangan());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -114,14 +110,10 @@ public class ObatDao {
         try (Connection conn = Koneksi.getKoneksi();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, o.getKodeObat());
             ps.setString(2, o.getNamaObat());
-            ps.setString(3, o.getJenis());
             ps.setString(4, o.getSatuan());
             ps.setInt(5, o.getStok());
-            ps.setBigDecimal(6, o.getHargaBeli());
             ps.setBigDecimal(7, o.getHargaJual());
-            ps.setString(8, o.getKeterangan());
             ps.setInt(9, o.getIdObat());
 
             return ps.executeUpdate() > 0;
@@ -167,15 +159,10 @@ public class ObatDao {
     private Obat mapRow(ResultSet rs) throws SQLException {
         Obat o = new Obat();
         o.setIdObat(rs.getInt("id_obat"));
-        o.setKodeObat(rs.getString("kode_obat"));
         o.setNamaObat(rs.getString("nama_obat"));
-        o.setJenis(rs.getString("jenis"));
         o.setSatuan(rs.getString("satuan"));
         o.setStok(rs.getInt("stok"));
-        o.setHargaBeli(rs.getBigDecimal("harga_beli"));
         o.setHargaJual(rs.getBigDecimal("harga_jual"));
-        o.setKeterangan(rs.getString("keterangan"));
-        o.setCreatedAt(rs.getTimestamp("created_at"));
         return o;
     }
 }

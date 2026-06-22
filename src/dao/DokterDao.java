@@ -33,8 +33,9 @@ public class DokterDao {
             while (rs.next()) {
                 Dokter d = new Dokter();
                 d.setIdDokter(rs.getInt("id_dokter"));
+                d.setKodeDokter(rs.getString("kode_dokter"));
                 d.setNamaDokter(rs.getString("nama_dokter"));
-                d.setSpesialisasi(rs.getString("spesialisasi"));
+                d.setSpesialisasi(rs.getString("spesialis"));
                 d.setNoTelp(rs.getString("no_telp"));
                 list.add(d);
             }
@@ -58,8 +59,9 @@ public class DokterDao {
                 while (rs.next()) {
                     Dokter d = new Dokter();
                     d.setIdDokter(rs.getInt("id_dokter"));
+                    d.setKodeDokter(rs.getString("kode_dokter"));
                     d.setNamaDokter(rs.getString("nama_dokter"));
-                    d.setSpesialisasi(rs.getString("spesialisasi"));
+                    d.setSpesialisasi(rs.getString("spesialis"));
                     d.setNoTelp(rs.getString("no_telp"));
                     list.add(d);
                 }
@@ -72,14 +74,15 @@ public class DokterDao {
 
     // Tambah dokter baru
     public boolean tambahDokter(Dokter d) {
-        String sql = "INSERT INTO dokter (nama_dokter, spesialisasi, no_telp) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO dokter (kode_dokter, nama_dokter, spesialis, no_telp) VALUES (?, ?, ?, ?)";
 
         try (Connection conn = Koneksi.getKoneksi();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, d.getNamaDokter());
-            ps.setString(2, d.getSpesialisasi());
-            ps.setString(3, d.getNoTelp());
+            ps.setString(1, d.getKodeDokter());
+            ps.setString(2, d.getNamaDokter());
+            ps.setString(3, d.getSpesialisasi());
+            ps.setString(4, d.getNoTelp());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -90,15 +93,16 @@ public class DokterDao {
 
     // Update data dokter
     public boolean updateDokter(Dokter d) {
-        String sql = "UPDATE dokter SET nama_dokter=?, spesialisasi=?, no_telp=? WHERE id_dokter=?";
+        String sql = "UPDATE dokter SET kode_dokter=?, nama_dokter=?, spesialis=?, no_telp=? WHERE id_dokter=?";
 
         try (Connection conn = Koneksi.getKoneksi();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, d.getNamaDokter());
-            ps.setString(2, d.getSpesialisasi());
-            ps.setString(3, d.getNoTelp());
-            ps.setInt(4, d.getIdDokter());
+            ps.setString(1, d.getKodeDokter());
+            ps.setString(2, d.getNamaDokter());
+            ps.setString(3, d.getSpesialisasi());
+            ps.setString(4, d.getNoTelp());
+            ps.setInt(5, d.getIdDokter());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {

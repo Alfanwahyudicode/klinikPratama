@@ -1,11 +1,3 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package dao;
 
 import koneksi.Koneksi;
@@ -25,16 +17,9 @@ import javax.swing.JOptionPane;
  */
 public class PemeriksaanDao {
 
-    // mengambil semua data pemeriksaan (join ke kunjungan, pasien, dokter)
     public List<Pemeriksaan> getAllPemeriksaan() {
         List<Pemeriksaan> list = new ArrayList<>();
-        String sql = "SELECT pe.*, k.tgl_kunjungan, k.keluhan, "
-                   + "p.no_rm, p.nama_pasien, d.nama_dokter "
-                   + "FROM pemeriksaan pe "
-                   + "JOIN kunjungan k ON pe.id_kunjungan = k.id_kunjungan "
-                   + "JOIN pasien p ON k.id_pasien = p.id_pasien "
-                   + "JOIN dokter d ON k.id_dokter = d.id_dokter "
-                   + "ORDER BY pe.id_pemeriksaan ASC";
+        String sql = "SELECT * FROM pemeriksaan ORDER BY id_pemeriksaan ASC";
 
         try (Connection conn = Koneksi.getKoneksi();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -49,11 +34,60 @@ public class PemeriksaanDao {
         return list;
     }
 
-    // Cari pemeriksaan berdasarkan nama pasien / no RM
-    public List<Pemeriksaan> cariPemeriksaan(String keyword) {
-        List<Pemeriksaan> list = new ArrayList<>();
-        String sql = "SELECT pe.*, k.tgl_kunjungan, k.keluhan, "
-                   + "p.no_rm, p.nama_pasien, d.nama_dokter "
+    public Pemeriksaan getPemeriksaanById(int idPemeriksaan) {
+        String sql = "SELECT * FROM pemeriksaan WHERE id_pemeriksaan = ?";
+
+        try (Connection conn = Koneksi.getKoneksi();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, idPemeriksaan);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapRow(rs);
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Gagal mengambil data pemeriksaan: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public List<Object[]> getDataTabel() {
+        List<Object[]> list = new ArrayList<>();
+        String sql = "SELECT pe.id_pemeriksaan, p.no_rm, p.nama_pasien, d.nama_dokter, "
+                   + "pe.diagnosa, pe.tindakan, pe.biaya_tindakan "
+                   + "FROM pemeriksaan pe "
+                   + "JOIN kunjungan k ON pe.id_kunjungan = k.id_kunjungan "
+                   + "JOIN pasien p ON k.id_pasien = p.id_pasien "
+                   + "JOIN dokter d ON k.id_dokter = d.id_dokter "
+                   + "ORDER BY pe.id_pemeriksaan ASC";
+
+        try (Connection conn = Koneksi.getKoneksi();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                list.add(new Object[]{
+                    rs.getInt("id_pemeriksaan"),
+                    rs.getString("no_rm"),
+                    rs.getString("nama_pasien"),
+                    rs.getString("nama_dokter"),
+                    rs.getString("diagnosa"),
+                    rs.getString("tindakan"),
+                    rs.getBigDecimal("biaya_tindakan")
+                });
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Gagal mengambil data pemeriksaan: " + e.getMessage());
+        }
+        return list;
+    }
+
+    public List<Object[]> cariDataTabel(String keyword) {
+        List<Object[]> list = new ArrayList<>();
+        String sql = "SELECT pe.id_pemeriksaan, p.no_rm, p.nama_pasien, d.nama_dokter, "
+                   + "pe.diagnosa, pe.tindakan, pe.biaya_tindakan "
                    + "FROM pemeriksaan pe "
                    + "JOIN kunjungan k ON pe.id_kunjungan = k.id_kunjungan "
                    + "JOIN pasien p ON k.id_pasien = p.id_pasien "
@@ -69,7 +103,15 @@ public class PemeriksaanDao {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    list.add(mapRow(rs));
+                    list.add(new Object[]{
+                        rs.getInt("id_pemeriksaan"),
+                        rs.getString("no_rm"),
+                        rs.getString("nama_pasien"),
+                        rs.getString("nama_dokter"),
+                        rs.getString("diagnosa"),
+                        rs.getString("tindakan"),
+                        rs.getBigDecimal("biaya_tindakan")
+                    });
                 }
             }
         } catch (SQLException e) {
@@ -78,12 +120,9 @@ public class PemeriksaanDao {
         return list;
     }
 
-    // Ambil daftar kunjungan yang BELUM punya pemeriksaan (untuk pilihan saat tambah)
-    // Hanya kunjungan dengan status 'daftar' yang ditampilkan
-    public List<Pemeriksaan> getKunjunganBelumPeriksa() {
-        List<Pemeriksaan> list = new ArrayList<>();
-        String sql = "SELECT k.id_kunjungan, k.tgl_kunjungan, k.keluhan, "
-                   + "p.no_rm, p.nama_pasien, d.nama_dokter "
+    public List<Object[]> getKunjunganBelumPeriksa() {
+        List<Object[]> list = new ArrayList<>();
+        String sql = "SELECT k.id_kunjungan, p.no_rm, p.nama_pasien, d.nama_dokter, k.keluhan "
                    + "FROM kunjungan k "
                    + "JOIN pasien p ON k.id_pasien = p.id_pasien "
                    + "JOIN dokter d ON k.id_dokter = d.id_dokter "
@@ -96,14 +135,13 @@ public class PemeriksaanDao {
              ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
-                Pemeriksaan pe = new Pemeriksaan();
-                pe.setIdKunjungan(rs.getInt("id_kunjungan"));
-                pe.setTglKunjungan(rs.getString("tgl_kunjungan"));
-                pe.setKeluhan(rs.getString("keluhan"));
-                pe.setNoRm(rs.getString("no_rm"));
-                pe.setNamaPasien(rs.getString("nama_pasien"));
-                pe.setNamaDokter(rs.getString("nama_dokter"));
-                list.add(pe);
+                list.add(new Object[]{
+                    rs.getInt("id_kunjungan"),
+                    rs.getString("no_rm"),
+                    rs.getString("nama_pasien"),
+                    rs.getString("nama_dokter"),
+                    rs.getString("keluhan")
+                });
             }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(null, "Gagal mengambil data kunjungan: " + e.getMessage());
@@ -111,7 +149,6 @@ public class PemeriksaanDao {
         return list;
     }
 
-    // Validasi: cek apakah kunjungan ini sudah punya pemeriksaan
     public boolean sudahDiperiksa(int idKunjungan) {
         String sql = "SELECT id_pemeriksaan FROM pemeriksaan WHERE id_kunjungan = ?";
 
@@ -125,13 +162,11 @@ public class PemeriksaanDao {
             }
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(null, "Gagal validasi pemeriksaan: " + e.getMessage());
-            return true; // anggap sudah ada agar tidak terjadi duplikasi saat error
+            return true;
         }
     }
 
-    // Tambah pemeriksaan baru
     public boolean tambahPemeriksaan(Pemeriksaan pe) {
-        // Validasi: 1 kunjungan hanya 1 pemeriksaan
         if (sudahDiperiksa(pe.getIdKunjungan())) {
             JOptionPane.showMessageDialog(null, "Kunjungan ini sudah memiliki data pemeriksaan!");
             return false;
@@ -151,7 +186,6 @@ public class PemeriksaanDao {
 
             boolean berhasil = ps.executeUpdate() > 0;
 
-            // Update status kunjungan jadi 'selesai' setelah diperiksa
             if (berhasil) {
                 updateStatusKunjunganSelesai(conn, pe.getIdKunjungan());
             }
@@ -163,7 +197,6 @@ public class PemeriksaanDao {
         }
     }
 
-    // Update data pemeriksaan
     public boolean updatePemeriksaan(Pemeriksaan pe) {
         String sql = "UPDATE pemeriksaan SET diagnosa=?, tindakan=?, catatan=?, biaya_tindakan=? "
                    + "WHERE id_pemeriksaan=?";
@@ -184,7 +217,6 @@ public class PemeriksaanDao {
         }
     }
 
-    // Hapus pemeriksaan
     public boolean hapusPemeriksaan(int idPemeriksaan) {
         String sql = "DELETE FROM pemeriksaan WHERE id_pemeriksaan=?";
 
@@ -199,7 +231,6 @@ public class PemeriksaanDao {
         }
     }
 
-    // Helper: update status kunjungan jadi 'selesai'
     private void updateStatusKunjunganSelesai(Connection conn, int idKunjungan) throws SQLException {
         String sql = "UPDATE kunjungan SET status='selesai' WHERE id_kunjungan=?";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -208,7 +239,6 @@ public class PemeriksaanDao {
         }
     }
 
-    // Helper: mapping ResultSet -> Pemeriksaan
     private Pemeriksaan mapRow(ResultSet rs) throws SQLException {
         Pemeriksaan pe = new Pemeriksaan();
         pe.setIdPemeriksaan(rs.getInt("id_pemeriksaan"));
@@ -217,11 +247,6 @@ public class PemeriksaanDao {
         pe.setTindakan(rs.getString("tindakan"));
         pe.setCatatan(rs.getString("catatan"));
         pe.setBiayaTindakan(rs.getBigDecimal("biaya_tindakan"));
-        pe.setNoRm(rs.getString("no_rm"));
-        pe.setNamaPasien(rs.getString("nama_pasien"));
-        pe.setNamaDokter(rs.getString("nama_dokter"));
-        pe.setTglKunjungan(rs.getString("tgl_kunjungan"));
-        pe.setKeluhan(rs.getString("keluhan"));
         return pe;
     }
 }
