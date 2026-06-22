@@ -16,6 +16,7 @@ public class Pasien {
     private String jenisKelamin;
     private String alamat;
     private String noHp;
+    private String tanggalLahir;
 
     public int getIdPasien() {
         return idPasien;
@@ -64,4 +65,23 @@ public class Pasien {
     public void setNoHp(String noHp) {
         this.noHp = noHp;
     }
-}
+    public void SetTanggalLahir( String tanggalLahir) {
+        this.tanggalLahir = tanggalLahir;
+    }
+
+    public void setTanggalLahir(String string) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    public void setNoTelp(String string) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    public String getTanggalLahir() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    public String getNoTelp() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+}   
