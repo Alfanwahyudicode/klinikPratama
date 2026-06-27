@@ -49,6 +49,19 @@ public class FormResep extends javax.swing.JFrame {
         txtTglResep.setText(LocalDate.now().toString());
         txtIdResep.setEditable(false);
         txtSubtotal.setEditable(false);
+        
+        txtJumlah.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+    public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
+    public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
+    public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungSubtotal(); }
+});
+
+// Listener otomatis hitung subtotal saat txtHargaSatuan diketik
+txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+    public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
+    public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
+    public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungSubtotal(); }
+});
     }
     private void setupTabel() {
         DefaultTableModel model = new DefaultTableModel(
@@ -97,47 +110,59 @@ public class FormResep extends javax.swing.JFrame {
     }
     
     private void isiHargaDariObatTerpilih() {
-        int idx = cmbIdObat.getSelectedIndex();
-        if (listObat != null && idx >= 0 && idx < listObat.size()) {
-            Obat o = listObat.get(idx);
-            BigDecimal harga = o.getHargaJual();
-            txtHargaSatuan.setText(harga != null ? harga.toPlainString() : "0");
-            hitungSubtotal();
-        }
+    int idx = cmbIdObat.getSelectedIndex();
+    if (listObat != null && idx >= 0 && idx < listObat.size()) {
+        Obat o = listObat.get(idx);
+        BigDecimal harga = o.getHargaJual();
+        txtHargaSatuan.setText(harga != null ? formatRupiah(harga) : "Rp 0");
+        hitungSubtotal();
     }
+}
  
     private void hitungSubtotal() {
-        try {
-            int jumlah       = Integer.parseInt(txtJumlah.getText().trim());
-            BigDecimal harga = new BigDecimal(txtHargaSatuan.getText().trim());
-            BigDecimal sub   = harga.multiply(BigDecimal.valueOf(jumlah));
-            txtSubtotal.setText(sub.toPlainString());
-        } catch (NumberFormatException e) {
-            txtSubtotal.setText("0");
-        }
+    try {
+        int jumlah = Integer.parseInt(txtJumlah.getText().trim());
+
+        // Bersihkan format rupiah dulu sebelum diparse
+        String hargaBersih = txtHargaSatuan.getText()
+            .replace("Rp", "").replace(".", "").replace(",", ".").trim();
+        BigDecimal harga = new BigDecimal(hargaBersih);
+        BigDecimal sub   = harga.multiply(BigDecimal.valueOf(jumlah));
+
+        txtSubtotal.setText(formatRupiah(sub));
+    } catch (NumberFormatException e) {
+        txtSubtotal.setText("Rp 0");
     }
+}
+    private String formatRupiah(BigDecimal angka) {
+    if (angka == null) return "Rp 0";
+    java.text.NumberFormat format = java.text.NumberFormat.getCurrencyInstance(
+        new java.util.Locale("id", "ID"));
+    return format.format(angka);
+}
+
     
     private void loadTabelDetail() {
-        if (resepAktif == null) return;
- 
-        listDetail = detailDao.getByResepId(resepAktif.getIdResep());
-        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-        model.setRowCount(0);
- 
-        int no = 1;
-        for (ResepDetail rd : listDetail) {
-            String namaObat = cariNamaObat(rd.getIdObat());
-            model.addRow(new Object[]{
-                no++,
-                rd.getIdResep(),
-                namaObat,
-                rd.getJumlah(),
-                rd.getAturanPakai(),
-                rd.getHargaSatuan(),
-                rd.getSubtotal()
-            });
-        }
+    if (resepAktif == null) return;
+
+    listDetail = detailDao.getByResepId(resepAktif.getIdResep());
+    DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+    model.setRowCount(0);
+
+    int no = 1;
+    for (ResepDetail rd : listDetail) {
+        String namaObat = cariNamaObat(rd.getIdObat());
+        model.addRow(new Object[]{
+            no++,
+            rd.getIdResep(),
+            namaObat,
+            rd.getJumlah(),
+            rd.getAturanPakai(),
+            formatRupiah(rd.getHargaSatuan()),   // ← format rupiah
+            formatRupiah(rd.getSubtotal())        // ← format rupiah
+        });
     }
+}
     
     private String cariNamaObat(int idObat) {
         if (listObat == null) return String.valueOf(idObat);
@@ -148,27 +173,27 @@ public class FormResep extends javax.swing.JFrame {
     }
  
     private void tabelMouseClicked(java.awt.event.MouseEvent evt) {
-        int row = jTable1.getSelectedRow();
-        if (row >= 0 && listDetail != null && row < listDetail.size()) {
-            detailTerpilih = listDetail.get(row);
- 
-            if (listObat != null) {
-                for (int i = 0; i < listObat.size(); i++) {
-                    if (listObat.get(i).getIdObat() == detailTerpilih.getIdObat()) {
-                        cmbIdObat.setSelectedIndex(i);
-                        break;
-                    }
+    int row = jTable1.getSelectedRow();
+    if (row >= 0 && listDetail != null && row < listDetail.size()) {
+        detailTerpilih = listDetail.get(row);
+
+        if (listObat != null) {
+            for (int i = 0; i < listObat.size(); i++) {
+                if (listObat.get(i).getIdObat() == detailTerpilih.getIdObat()) {
+                    cmbIdObat.setSelectedIndex(i);
+                    break;
                 }
             }
- 
-            txtJumlah.setText(String.valueOf(detailTerpilih.getJumlah()));
-            txtAturanPakai.setText(detailTerpilih.getAturanPakai());
-            txtHargaSatuan.setText(detailTerpilih.getHargaSatuan() != null
-                    ? detailTerpilih.getHargaSatuan().toPlainString() : "0");
-            txtSubtotal.setText(detailTerpilih.getSubtotal() != null
-                    ? detailTerpilih.getSubtotal().toPlainString() : "0");
         }
+
+        txtJumlah.setText(String.valueOf(detailTerpilih.getJumlah()));
+        txtAturanPakai.setText(detailTerpilih.getAturanPakai());
+        txtHargaSatuan.setText(detailTerpilih.getHargaSatuan() != null
+                ? formatRupiah(detailTerpilih.getHargaSatuan()) : "Rp 0");
+        txtSubtotal.setText(detailTerpilih.getSubtotal() != null
+                ? formatRupiah(detailTerpilih.getSubtotal()) : "Rp 0");
     }
+}
     
     private void bersihkanForm() {
         txtJumlah.setText("");
@@ -628,8 +653,9 @@ public class FormResep extends javax.swing.JFrame {
             return;
         }
  
-        BigDecimal harga    = new BigDecimal(txtHargaSatuan.getText().trim());
-        BigDecimal subtotal = harga.multiply(BigDecimal.valueOf(jumlah));
+        String hargaBersih = txtHargaSatuan.getText()
+            .replace("Rp", "").replace(".", "").replace(",", ".").trim();
+        BigDecimal harga = new BigDecimal(hargaBersih);        BigDecimal subtotal = harga.multiply(BigDecimal.valueOf(jumlah));
  
         ResepDetail rd = new ResepDetail(
             resepAktif.getIdResep(),
@@ -674,7 +700,9 @@ public class FormResep extends javax.swing.JFrame {
             return;
         }
  
-        BigDecimal harga    = new BigDecimal(txtHargaSatuan.getText().trim());
+        String hargaBersih = txtHargaSatuan.getText()
+            .replace("Rp", "").replace(".", "").replace(",", ".").trim();
+        BigDecimal harga = new BigDecimal(hargaBersih);        
         BigDecimal subtotal = harga.multiply(BigDecimal.valueOf(jumlahBaru));
  
         detailTerpilih.setIdObat(obatDipilih.getIdObat());
