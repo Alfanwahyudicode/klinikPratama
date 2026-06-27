@@ -46,7 +46,7 @@ public class FormResep extends javax.swing.JFrame {
         setupTabel();
         loadComboPemeriksaan();
         loadComboObat();
-        jTextField2.setText(LocalDate.now().toString());
+        txtTglResep.setText(LocalDate.now().toString());
         txtIdResep.setEditable(false);
         txtSubtotal.setEditable(false);
     }
@@ -77,11 +77,9 @@ public class FormResep extends javax.swing.JFrame {
             cmbIdObat.addItem("Tidak ada data obat");
         } else {
             for (Obat o : listObat) {
-                // tampilkan: "[1] Paracetamol (Tablet)"
                 cmbIdObat.addItem(o.toString());
             }
         }
-        // langsung isi harga satuan untuk item pertama
         isiHargaDariObatTerpilih();
     }
         
@@ -128,7 +126,6 @@ public class FormResep extends javax.swing.JFrame {
  
         int no = 1;
         for (ResepDetail rd : listDetail) {
-            // Cari nama obat dari listObat supaya tabel lebih informatif
             String namaObat = cariNamaObat(rd.getIdObat());
             model.addRow(new Object[]{
                 no++,
@@ -155,7 +152,6 @@ public class FormResep extends javax.swing.JFrame {
         if (row >= 0 && listDetail != null && row < listDetail.size()) {
             detailTerpilih = listDetail.get(row);
  
-            // Pilih obat yang sesuai di combo
             if (listObat != null) {
                 for (int i = 0; i < listObat.size(); i++) {
                     if (listObat.get(i).getIdObat() == detailTerpilih.getIdObat()) {
@@ -237,10 +233,10 @@ public class FormResep extends javax.swing.JFrame {
             return;
         }
  
-        String tglStr = jTextField2.getText().trim();
+        String tglStr = txtTglResep.getText().trim();
         Date tglResep;
         try {
-            tglResep = Date.valueOf(tglStr); // format yyyy-MM-dd
+            tglResep = Date.valueOf(tglStr);
         } catch (IllegalArgumentException e) {
             JOptionPane.showMessageDialog(this,
                 "Format tanggal salah! Gunakan: yyyy-MM-dd", "Validasi", JOptionPane.WARNING_MESSAGE);
@@ -251,15 +247,71 @@ public class FormResep extends javax.swing.JFrame {
         int idBaru = resepDao.tambahResep(r);
  
         if (idBaru > 0) {
-            resepAktif = r; // simpan ke state
-            txtIdResep.setText(String.valueOf(idBaru)); // tampilkan ID Resep hasil generate DB
+            resepAktif = r;
+            txtIdResep.setText(String.valueOf(idBaru));
             JOptionPane.showMessageDialog(this,
                 "Resep berhasil disimpan! ID Resep: " + idBaru + "\nSekarang tambahkan obat.",
                 "Sukses", JOptionPane.INFORMATION_MESSAGE);
         }
     }
     
-    
+    private void cariData() {
+    String keyword = txtCari.getText().trim();
+
+    if (resepAktif == null) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Pilih ID Pemeriksaan terlebih dahulu!", "Peringatan",
+            javax.swing.JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    if (keyword.isEmpty()) {
+        loadTabelDetail();
+        return;
+    }
+
+    javax.swing.table.DefaultTableModel model =
+        (javax.swing.table.DefaultTableModel) jTable1.getModel();
+    model.setRowCount(0);
+
+    int no = 1;
+    for (ResepDetail rd : listDetail) {
+        String namaObat = cariNamaObat(rd.getIdObat());
+
+        boolean cocok =
+            String.valueOf(rd.getIdResep()).contains(keyword) ||
+            String.valueOf(rd.getIdObat()).contains(keyword)  ||
+            namaObat.toLowerCase().contains(keyword.toLowerCase()) ||
+            (rd.getAturanPakai() != null &&
+             rd.getAturanPakai().toLowerCase().contains(keyword.toLowerCase()));
+
+        if (cocok) {
+            model.addRow(new Object[]{
+                no++,
+                rd.getIdResep(),
+                namaObat,
+                rd.getJumlah(),
+                rd.getAturanPakai(),
+                rd.getHargaSatuan(),
+                rd.getSubtotal()
+            });
+        }
+    }
+
+    if (model.getRowCount() == 0) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Data tidak ditemukan!", "Info",
+            javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        loadTabelDetail();
+    }
+
+    if (model.getRowCount() == 0) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Data tidak ditemukan!", "Info",
+            javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        loadTabelDetail();
+    }
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -275,7 +327,7 @@ public class FormResep extends javax.swing.JFrame {
         txtIdResep = new javax.swing.JTextField();
         jComboBox1 = new javax.swing.JComboBox<>();
         jLabel4 = new javax.swing.JLabel();
-        jTextField2 = new javax.swing.JTextField();
+        txtTglResep = new javax.swing.JTextField();
         jSeparator1 = new javax.swing.JSeparator();
         jLabel5 = new javax.swing.JLabel();
         jLabel6 = new javax.swing.JLabel();
@@ -294,7 +346,7 @@ public class FormResep extends javax.swing.JFrame {
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         txtCari = new javax.swing.JTextField();
-        cmbCari = new javax.swing.JButton();
+        btnCari = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -320,10 +372,10 @@ public class FormResep extends javax.swing.JFrame {
 
         jLabel4.setText("Tangga Resep");
 
-        jTextField2.setText("yyyy-MM-dd");
-        jTextField2.addActionListener(new java.awt.event.ActionListener() {
+        txtTglResep.setText("yyyy-MM-dd");
+        txtTglResep.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextField2ActionPerformed(evt);
+                txtTglResepActionPerformed(evt);
             }
         });
 
@@ -415,10 +467,10 @@ public class FormResep extends javax.swing.JFrame {
             }
         });
 
-        cmbCari.setText("Cari");
-        cmbCari.addActionListener(new java.awt.event.ActionListener() {
+        btnCari.setText("Cari");
+        btnCari.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cmbCariActionPerformed(evt);
+                btnCariActionPerformed(evt);
             }
         });
 
@@ -434,7 +486,7 @@ public class FormResep extends javax.swing.JFrame {
                             .addComponent(txtSubtotal)
                             .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(txtAturanPakai)
-                            .addComponent(jTextField2, javax.swing.GroupLayout.DEFAULT_SIZE, 285, Short.MAX_VALUE)
+                            .addComponent(txtTglResep, javax.swing.GroupLayout.DEFAULT_SIZE, 285, Short.MAX_VALUE)
                             .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addComponent(txtIdResep)
@@ -477,7 +529,7 @@ public class FormResep extends javax.swing.JFrame {
                                     .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                     .addComponent(txtCari)
                                     .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                    .addComponent(cmbCari))
+                                    .addComponent(btnCari))
                                 .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 582, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addGap(0, 0, Short.MAX_VALUE))))
         );
@@ -497,7 +549,7 @@ public class FormResep extends javax.swing.JFrame {
                 .addGap(18, 18, 18)
                 .addComponent(jLabel4)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(txtTglResep, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(19, 19, 19)
@@ -527,7 +579,7 @@ public class FormResep extends javax.swing.JFrame {
                     .addComponent(btnBatal)
                     .addComponent(btnHapus)
                     .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(cmbCari))
+                    .addComponent(btnCari))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 24, Short.MAX_VALUE)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -548,15 +600,15 @@ public class FormResep extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtJumlahActionPerformed
 
-    private void jTextField2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField2ActionPerformed
+    private void txtTglResepActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTglResepActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField2ActionPerformed
+    }//GEN-LAST:event_txtTglResepActionPerformed
 
     private void btnTambahDetailActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTambahDetailActionPerformed
         // TODO add your handling code here:
         if (resepAktif == null) {
             simpanResepHeader();
-            if (resepAktif == null) return; // simpan header gagal
+            if (resepAktif == null) return;
         }
  
         if (!validasiDetail()) return;
@@ -568,7 +620,6 @@ public class FormResep extends javax.swing.JFrame {
             return;
         }
  
-        // Cek stok obat mencukupi
         int jumlah = Integer.parseInt(txtJumlah.getText().trim());
         if (jumlah > obatDipilih.getStok()) {
             JOptionPane.showMessageDialog(this,
@@ -591,10 +642,9 @@ public class FormResep extends javax.swing.JFrame {
  
         int idDetail = detailDao.tambahDetail(rd);
         if (idDetail > 0) {
-            // Kurangi stok obat di DB
             obatDao.updateStok(obatDipilih.getIdObat(), obatDipilih.getStok() - jumlah);
-            loadComboObat();       // refresh combo agar stok ter-update
-            loadTabelDetail();     // refresh tabel
+            loadComboObat();
+            loadTabelDetail();
             bersihkanForm();
             JOptionPane.showMessageDialog(this, "Obat berhasil ditambahkan ke resep!",
                 "Sukses", JOptionPane.INFORMATION_MESSAGE);
@@ -617,7 +667,6 @@ public class FormResep extends javax.swing.JFrame {
         int jumlahLama     = detailTerpilih.getJumlah();
         int selisih        = jumlahBaru - jumlahLama;
  
-        // Cek stok untuk selisih tambahan
         if (selisih > 0 && selisih > obatDipilih.getStok()) {
             JOptionPane.showMessageDialog(this,
                 "Stok obat tidak cukup untuk penambahan jumlah! Stok tersedia: " + obatDipilih.getStok(),
@@ -635,7 +684,6 @@ public class FormResep extends javax.swing.JFrame {
         detailTerpilih.setSubtotal(subtotal);
  
         if (detailDao.updateDetail(detailTerpilih)) {
-            // Sesuaikan stok: kembalikan stok lama, kurangi stok baru
             int stokSekarang = obatDipilih.getStok();
             obatDao.updateStok(obatDipilih.getIdObat(), stokSekarang - selisih);
             loadComboObat();
@@ -651,20 +699,17 @@ public class FormResep extends javax.swing.JFrame {
         Pemeriksaan pe = getPemeriksaanTerpilih();
         if (pe == null) return;
  
-        // Cek apakah pemeriksaan ini sudah punya resep
         Resep existing = resepDao.getByIdPemeriksaan(pe.getIdPemeriksaan());
         if (existing != null) {
-            // Sudah ada → tampilkan resep yang ada, load detailnya
             resepAktif = existing;
             txtIdResep.setText(String.valueOf(existing.getIdResep()));
-            jTextField2.setText(existing.getTglResep() != null
+            txtTglResep.setText(existing.getTglResep() != null
                 ? existing.getTglResep().toString() : LocalDate.now().toString());
             loadTabelDetail();
             JOptionPane.showMessageDialog(this,
                 "Pemeriksaan ini sudah memiliki resep (ID: " + existing.getIdResep() + ").\nDetail obat ditampilkan di tabel.",
                 "Info", JOptionPane.INFORMATION_MESSAGE);
         } else {
-            // Belum ada → reset agar bisa buat resep baru
             resepAktif = null;
             txtIdResep.setText("");
             DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
@@ -706,19 +751,24 @@ public class FormResep extends javax.swing.JFrame {
         resepAktif = null;
         detailTerpilih = null;
         txtIdResep.setText("");
-        jTextField2.setText(LocalDate.now().toString());
+        txtTglResep.setText(LocalDate.now().toString());
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
         model.setRowCount(0);
         JOptionPane.showMessageDialog(this, "Form berhasil direset.",
             "Info", JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_btnBatalActionPerformed
 
-    private void cmbCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbCariActionPerformed
+    private void btnCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCariActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_cmbCariActionPerformed
+        txtCari.setText("");
+    if (resepAktif != null) {
+        loadTabelDetail();
+    }//GEN-LAST:event_btnCariActionPerformed
 
+}
     private void txtCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtCariActionPerformed
         // TODO add your handling code here:
+         cariData();
     }//GEN-LAST:event_txtCariActionPerformed
 
     private void cmbIdObatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbIdObatActionPerformed
@@ -763,10 +813,10 @@ public class FormResep extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnBatal;
+    private javax.swing.JButton btnCari;
     private javax.swing.JButton btnHapus;
     private javax.swing.JButton btnTambahDetail;
     private javax.swing.JButton btnUbah;
-    private javax.swing.JButton cmbCari;
     private javax.swing.JComboBox<String> cmbIdObat;
     private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JLabel jLabel1;
@@ -781,12 +831,12 @@ public class FormResep extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JSeparator jSeparator1;
     private javax.swing.JTable jTable1;
-    private javax.swing.JTextField jTextField2;
     private javax.swing.JTextField txtAturanPakai;
     private javax.swing.JTextField txtCari;
     private javax.swing.JTextField txtHargaSatuan;
     private javax.swing.JTextField txtIdResep;
     private javax.swing.JTextField txtJumlah;
     private javax.swing.JTextField txtSubtotal;
+    private javax.swing.JTextField txtTglResep;
     // End of variables declaration//GEN-END:variables
 }
