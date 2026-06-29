@@ -53,15 +53,16 @@
                                   <Component id="txtTelepon" max="32767" attributes="0"/>
                               </Group>
                           </Group>
-                          <Group type="102" attributes="0">
-                              <Component id="jLabel2" min="-2" pref="144" max="-2" attributes="0"/>
+                          <Group type="102" alignment="0" attributes="0">
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="jLabel2" alignment="0" min="-2" pref="144" max="-2" attributes="0"/>
+                                  <Component id="jLabel1" alignment="0" min="-2" pref="144" max="-2" attributes="0"/>
+                              </Group>
                               <EmptySpace max="-2" attributes="0"/>
-                              <Component id="txtNamaDokter" max="32767" attributes="0"/>
-                          </Group>
-                          <Group type="102" attributes="0">
-                              <Component id="jLabel1" min="-2" pref="144" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="txtKodeDokter" max="32767" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Component id="txtIdDokter" max="32767" attributes="0"/>
+                                  <Component id="txtNamaDokter" max="32767" attributes="0"/>
+                              </Group>
                           </Group>
                       </Group>
                       <EmptySpace max="-2" attributes="0"/>
@@ -76,7 +77,7 @@
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="jLabel1" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="txtKodeDokter" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="txtIdDokter" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace min="-2" pref="9" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
@@ -115,15 +116,12 @@
         <Property name="text" type="java.lang.String" value="Cari"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JTextField" name="txtKodeDokter">
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtKodeDokterActionPerformed"/>
-      </Events>
+    <Component class="javax.swing.JTextField" name="txtIdDokter">
+      <Properties>
+        <Property name="editable" type="boolean" value="false"/>
+      </Properties>
     </Component>
     <Component class="javax.swing.JTextField" name="txtNamaDokter">
-      <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtNamaDokterActionPerformed"/>
-      </Events>
     </Component>
     <Component class="javax.swing.JComboBox" name="cmbSpesialis">
       <Properties>
@@ -164,7 +162,7 @@
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel1">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Kode Dokter"/>
+        <Property name="text" type="java.lang.String" value="ID Dokter"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JButton" name="btnHapus">
@@ -185,11 +183,10 @@
         <Component class="javax.swing.JTable" name="tblDokter">
           <Properties>
             <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
-              <Table columnCount="5" rowCount="5">
-                <Column editable="true" title="No" type="java.lang.Object"/>
-                <Column editable="true" title="Kode" type="java.lang.Object"/>
+              <Table columnCount="4" rowCount="5">
+                <Column editable="true" title="ID Dokter" type="java.lang.Object"/>
                 <Column editable="true" title="Nama Dokter" type="java.lang.Object"/>
-                <Column editable="true" title="Spesialis" type="java.lang.Object"/>
+                <Column editable="true" title="Spesialisasi" type="java.lang.Object"/>
                 <Column editable="true" title="No Telepon" type="java.lang.Object"/>
               </Table>
             </Property>
