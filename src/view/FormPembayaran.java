@@ -231,7 +231,7 @@ public class FormPembayaran extends javax.swing.JFrame {
 
         jLabel6.setText("Total Obat");
 
-        jLabel7.setText("Total Bayar");
+        jLabel7.setText("Total Biaya");
 
         jLabel8.setText("Metode Bayar");
 
@@ -315,7 +315,13 @@ public class FormPembayaran extends javax.swing.JFrame {
 
         lblNamaPasien.setText("Nama Pasien");
 
-        jLabel10.setText("Total Biaya");
+        jLabel10.setText("Total Bayar");
+
+        txtTotalBiaya.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtTotalBiayaActionPerformed(evt);
+            }
+        });
 
         jLabel11.setText("Kembalian");
 
@@ -329,10 +335,6 @@ public class FormPembayaran extends javax.swing.JFrame {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(jLabel8)
-                            .addGap(18, 18, 18)
-                            .addComponent(cmbMetodeBayar, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGroup(layout.createSequentialGroup()
                             .addComponent(btnSimpan)
                             .addGap(18, 18, 18)
@@ -370,7 +372,11 @@ public class FormPembayaran extends javax.swing.JFrame {
                             .addComponent(txtTotalBayar)
                             .addComponent(txtIdBayar)
                             .addComponent(txtTotalBiaya)
-                            .addComponent(txtKembalian))))
+                            .addComponent(txtKembalian)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel8)
+                        .addGap(22, 22, 22)
+                        .addComponent(cmbMetodeBayar, javax.swing.GroupLayout.PREFERRED_SIZE, 188, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(402, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
@@ -557,6 +563,10 @@ public class FormPembayaran extends javax.swing.JFrame {
         // TODO add your handling code here:
         kosongkanForm();
     }//GEN-LAST:event_btnTambahBaruActionPerformed
+
+    private void txtTotalBiayaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTotalBiayaActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtTotalBiayaActionPerformed
 
     /**
      * @param args the command line arguments
