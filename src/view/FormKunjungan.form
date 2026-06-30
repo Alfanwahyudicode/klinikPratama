@@ -33,21 +33,21 @@
           <Group type="102" alignment="0" attributes="0">
               <EmptySpace min="-2" pref="83" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                  <Component id="jComboBox2" alignment="0" min="-2" pref="330" max="-2" attributes="0"/>
+                  <Component id="cmbIdPasien" alignment="0" min="-2" pref="330" max="-2" attributes="0"/>
                   <Component id="cbPasien" alignment="0" min="-2" pref="60" max="-2" attributes="0"/>
                   <Component id="jLabel4" alignment="0" min="-2" pref="77" max="-2" attributes="0"/>
-                  <Component id="jTextField2" alignment="0" min="-2" pref="330" max="-2" attributes="0"/>
+                  <Component id="txtNamaPasien" alignment="0" min="-2" pref="330" max="-2" attributes="0"/>
                   <Component id="jScrollPane2" min="-2" pref="700" max="-2" attributes="0"/>
                   <Group type="103" alignment="0" groupAlignment="1" attributes="0">
                       <Group type="103" alignment="1" groupAlignment="0" max="-2" attributes="0">
                           <Component id="cbDokter" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="jComboBox1" max="32767" attributes="0"/>
+                          <Component id="cmbIdDokter" max="32767" attributes="0"/>
                           <Component id="jLabel5" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="jTextField3" alignment="0" min="-2" pref="330" max="-2" attributes="0"/>
+                          <Component id="txtNamaDokter" alignment="0" min="-2" pref="330" max="-2" attributes="0"/>
                       </Group>
                       <Group type="103" alignment="1" groupAlignment="0" attributes="0">
-                          <Component id="txtKeluhan" min="-2" max="-2" attributes="0"/>
-                          <Component id="jTextField1" alignment="0" min="-2" pref="700" max="-2" attributes="0"/>
+                          <Component id="jlabel" min="-2" max="-2" attributes="0"/>
+                          <Component id="txtKeluhan" alignment="0" min="-2" pref="700" max="-2" attributes="0"/>
                       </Group>
                       <Group type="102" alignment="0" attributes="0">
                           <Component id="jLabel6" min="-2" max="-2" attributes="0"/>
@@ -57,9 +57,9 @@
                       <Component id="jLabel3" alignment="1" min="-2" pref="700" max="-2" attributes="0"/>
                   </Group>
                   <Group type="102" alignment="1" attributes="0">
-                      <Component id="jTextField4" min="-2" pref="330" max="-2" attributes="0"/>
+                      <Component id="txtTanggal" min="-2" pref="330" max="-2" attributes="0"/>
                       <EmptySpace max="32767" attributes="0"/>
-                      <Component id="jComboBox3" min="-2" pref="330" max="-2" attributes="0"/>
+                      <Component id="cmbStatus" min="-2" pref="330" max="-2" attributes="0"/>
                   </Group>
                   <Group type="102" alignment="0" attributes="0">
                       <Component id="btnTambah" min="-2" pref="220" max="-2" attributes="0"/>
@@ -106,8 +106,8 @@
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Component id="jComboBox2" min="-2" max="-2" attributes="0"/>
-                  <Component id="jComboBox1" min="-2" max="-2" attributes="0"/>
+                  <Component id="cmbIdPasien" min="-2" max="-2" attributes="0"/>
+                  <Component id="cmbIdDokter" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace type="separate" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
@@ -116,13 +116,13 @@
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Component id="jTextField2" min="-2" max="-2" attributes="0"/>
-                  <Component id="jTextField3" min="-2" max="-2" attributes="0"/>
+                  <Component id="txtNamaPasien" min="-2" max="-2" attributes="0"/>
+                  <Component id="txtNamaDokter" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace type="separate" max="-2" attributes="0"/>
-              <Component id="txtKeluhan" min="-2" max="-2" attributes="0"/>
+              <Component id="jlabel" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="jTextField1" min="-2" pref="54" max="-2" attributes="0"/>
+              <Component id="txtKeluhan" min="-2" pref="54" max="-2" attributes="0"/>
               <EmptySpace type="separate" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="jLabel6" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -130,8 +130,8 @@
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="jTextField4" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="jComboBox3" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="txtTanggal" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="cmbStatus" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace type="separate" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
@@ -166,7 +166,7 @@
         <Property name="text" type="java.lang.String" value="ID Pasien"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JComboBox" name="jComboBox1">
+    <Component class="javax.swing.JComboBox" name="cmbIdDokter">
       <Properties>
         <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
           <StringArray count="4">
@@ -177,11 +177,14 @@
           </StringArray>
         </Property>
       </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="cmbIdDokterActionPerformed"/>
+      </Events>
       <AuxValues>
         <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
       </AuxValues>
     </Component>
-    <Component class="javax.swing.JComboBox" name="jComboBox2">
+    <Component class="javax.swing.JComboBox" name="cmbIdPasien">
       <Properties>
         <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
           <StringArray count="4">
@@ -192,18 +195,21 @@
           </StringArray>
         </Property>
       </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="cmbIdPasienActionPerformed"/>
+      </Events>
       <AuxValues>
         <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
       </AuxValues>
     </Component>
-    <Component class="javax.swing.JLabel" name="txtKeluhan">
+    <Component class="javax.swing.JLabel" name="jlabel">
       <Properties>
         <Property name="text" type="java.lang.String" value="Keluhan Pasien"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JTextField" name="jTextField1">
+    <Component class="javax.swing.JTextField" name="txtKeluhan">
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jTextField1ActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtKeluhanActionPerformed"/>
       </Events>
     </Component>
     <Container class="javax.swing.JScrollPane" name="jScrollPane2">
@@ -216,7 +222,8 @@
         <Component class="javax.swing.JTable" name="tblKunjungan">
           <Properties>
             <Property name="model" type="javax.swing.table.TableModel" editor="org.netbeans.modules.form.editors2.TableModelEditor">
-              <Table columnCount="4" rowCount="4">
+              <Table columnCount="5" rowCount="4">
+                <Column editable="true" title="ID Kunjungan" type="java.lang.Object"/>
                 <Column editable="true" title="ID Pasien" type="java.lang.Object"/>
                 <Column editable="true" title="Nama Pasien" type="java.lang.Object"/>
                 <Column editable="true" title="Tanggal Kunjungan" type="java.lang.Object"/>
@@ -225,6 +232,11 @@
             </Property>
             <Property name="columnModel" type="javax.swing.table.TableColumnModel" editor="org.netbeans.modules.form.editors2.TableColumnModelEditor">
               <TableColumnModel selectionModel="0">
+                <Column maxWidth="-1" minWidth="-1" prefWidth="-1" resizable="true">
+                  <Title/>
+                  <Editor/>
+                  <Renderer/>
+                </Column>
                 <Column maxWidth="-1" minWidth="-1" prefWidth="-1" resizable="true">
                   <Title/>
                   <Editor/>
@@ -273,27 +285,27 @@
         <Property name="text" type="java.lang.String" value="Nama Dokter"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JTextField" name="jTextField2">
+    <Component class="javax.swing.JTextField" name="txtNamaPasien">
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jTextField2ActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtNamaPasienActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JTextField" name="jTextField3">
+    <Component class="javax.swing.JTextField" name="txtNamaDokter">
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel6">
       <Properties>
         <Property name="text" type="java.lang.String" value="Tanggal Kunjungan"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JTextField" name="jTextField4">
+    <Component class="javax.swing.JTextField" name="txtTanggal">
       <Properties>
         <Property name="text" type="java.lang.String" value="yyyy/MM/dd"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jTextField4ActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtTanggalActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JComboBox" name="jComboBox3">
+    <Component class="javax.swing.JComboBox" name="cmbStatus">
       <Properties>
         <Property name="model" type="javax.swing.ComboBoxModel" editor="org.netbeans.modules.form.editors2.ComboBoxModelEditor">
           <StringArray count="4">
@@ -325,11 +337,17 @@
       <Properties>
         <Property name="text" type="java.lang.String" value="Hapus"/>
       </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnHapusActionPerformed"/>
+      </Events>
     </Component>
     <Component class="javax.swing.JButton" name="btnBatal">
       <Properties>
         <Property name="text" type="java.lang.String" value="Batal"/>
       </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnBatalActionPerformed"/>
+      </Events>
     </Component>
     <Component class="javax.swing.JTextField" name="txtCari">
       <Events>
@@ -340,6 +358,9 @@
       <Properties>
         <Property name="text" type="java.lang.String" value="Cari"/>
       </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnCariActionPerformed"/>
+      </Events>
     </Component>
     <Component class="javax.swing.JLabel" name="jLabel8">
       <Properties>
