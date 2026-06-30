@@ -155,10 +155,10 @@
                   <Component id="jLabel5" min="-2" max="-2" attributes="0"/>
                   <Component id="jLabel6" alignment="0" min="-2" pref="747" max="-2" attributes="0"/>
                   <Group type="103" alignment="0" groupAlignment="1" max="-2" attributes="0">
-                      <Component id="txtHaraJual" alignment="0" max="32767" attributes="0"/>
+                      <Component id="txtHarga" alignment="0" max="32767" attributes="0"/>
                       <Component id="jScrollPane2" alignment="0" max="32767" attributes="0"/>
                       <Group type="102" alignment="0" attributes="0">
-                          <Component id="btnTambah" min="-2" max="-2" attributes="0"/>
+                          <Component id="btnSimpan" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
                           <Component id="btnHapus" min="-2" max="-2" attributes="0"/>
                           <EmptySpace max="-2" attributes="0"/>
@@ -194,7 +194,7 @@
                       <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                   </Group>
                   <Group type="102" alignment="0" attributes="0">
-                      <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
+                      <EmptySpace min="0" pref="16" max="32767" attributes="0"/>
                       <Component id="jLabel2" min="-2" pref="22" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="txtNamaObat" min="-2" max="-2" attributes="0"/>
@@ -207,10 +207,10 @@
               <EmptySpace type="separate" max="-2" attributes="0"/>
               <Component id="jLabel5" min="-2" pref="10" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
-              <Component id="txtHaraJual" min="-2" pref="26" max="-2" attributes="0"/>
+              <Component id="txtHarga" min="-2" pref="26" max="-2" attributes="0"/>
               <EmptySpace min="-2" pref="27" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="btnTambah" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="btnSimpan" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="txtCari" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="btnCari" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="btnHapus" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -218,7 +218,7 @@
               </Group>
               <EmptySpace type="separate" max="-2" attributes="0"/>
               <Component id="jScrollPane2" min="-2" pref="265" max="-2" attributes="0"/>
-              <EmptySpace min="-2" pref="90" max="-2" attributes="0"/>
+              <EmptySpace min="-2" pref="74" max="-2" attributes="0"/>
           </Group>
       </Group>
     </DimensionLayout>
@@ -279,20 +279,20 @@
         <Property name="text" type="java.lang.String" value="Harga Jual"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JTextField" name="txtHaraJual">
+    <Component class="javax.swing.JTextField" name="txtHarga">
       <Properties>
         <Property name="horizontalAlignment" type="int" value="2"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtHaraJualActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="txtHargaActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JButton" name="btnTambah">
+    <Component class="javax.swing.JButton" name="btnSimpan">
       <Properties>
         <Property name="text" type="java.lang.String" value="Simpan"/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnTambahActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnSimpanActionPerformed"/>
       </Events>
     </Component>
     <Component class="javax.swing.JButton" name="btnHapus">
