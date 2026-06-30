@@ -2,18 +2,36 @@ package view;
 
 import dao.PasienDao;
 import model.Pasien;
+import java.sql.Date;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
 /**
- * Form GUI Pasien - Akurasi Kolom Database 100%.
  * @author VanZ
  */
 public class FormPasien extends javax.swing.JFrame {
 
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FormPasien.class.getName());
     private final PasienDao pasienDao = new PasienDao();
+
+    // ====== Agar ID Pasien & Nama Pasien yang sedang dipilih bisa diakses dari kelas lain ======
+    // Contoh pemakaian di kelas lain: FormPasien.getIdPasienTerpilih(), FormPasien.getNamaPasienTerpilih()
+    private static int idPasienTerpilih = -1;
+    private static String namaPasienTerpilih = "";
+
+    public static int getIdPasienTerpilih() {
+        return idPasienTerpilih;
+    }
+
+    public static String getNamaPasienTerpilih() {
+        return namaPasienTerpilih;
+    }
+
+    private static void setPasienTerpilih(int id, String nama) {
+        idPasienTerpilih = id;
+        namaPasienTerpilih = nama;
+    }
 
     public FormPasien() {
         initComponents();
@@ -25,14 +43,15 @@ public class FormPasien extends javax.swing.JFrame {
         txtIdPasien.setText("");
         txtNamaPasien.setText("");
         cmbJenisKelamin.setSelectedIndex(0);
+        txtTglLahir.setText("yyyy-MM-dd");
         txtTelepon.setText("");
         txtAlamat.setText("");
         txtCari.setText("");
         tblPasien.clearSelection();
     }
 
-    private void tampilkanDataTabel() {
-        String[] kolom = {"No", "Kode", "Nama Pasien", "JK (L/P)", "No Telp", "Alamat"};
+      private void tampilkanDataTabel() {
+        String[] kolom = {"ID Pasien", "Nama Pasien", "Jenis Kemlamin", "Tanggal Lahir", "Alamat", "No. Telepon"};
         DefaultTableModel model = new DefaultTableModel(null, kolom) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -41,21 +60,22 @@ public class FormPasien extends javax.swing.JFrame {
         };
 
         List<Pasien> list = pasienDao.getAllPasien();
-        int no = 1;
         for (Pasien p : list) {
-            // Konversi nilai 'L' atau 'P' dari database agar user friendly di tabel
-            String jkFull = (p.getJk() != null && p.getJk().equalsIgnoreCase("L")) ? "Laki-laki" : "Perempuan";
-            
-            model.addRow(new Object[]{
-                no++,
-                p.getIdPasien(),
-                p.getNamaPasien(),
-                jkFull,
-                p.getNoTelp(),
-                p.getAlamat()
-            });
+            model.addRow(buatBarisTabel(p));
         }
         tblPasien.setModel(model);
+    }
+
+    private Object[] buatBarisTabel(Pasien p) {
+        String jkFull = (p.getJk() != null && p.getJk().equalsIgnoreCase("L")) ? "Laki-laki" : "Perempuan";
+        return new Object[]{
+            p.getIdPasien(),
+            p.getNamaPasien(),
+            jkFull,
+            p.getTglLahir(),
+            p.getAlamat(),
+            p.getNoTelp()
+        };
     }
 
     private void isiFormDariTabel() {
@@ -65,14 +85,40 @@ public class FormPasien extends javax.swing.JFrame {
         }
 
         DefaultTableModel model = (DefaultTableModel) tblPasien.getModel();
-        txtIdPasien.setText(model.getValueAt(row, 1).toString());
-        txtNamaPasien.setText(model.getValueAt(row, 2).toString());
-        
-        String jkValue = model.getValueAt(row, 3).toString();
+
+        int id = Integer.parseInt(model.getValueAt(row, 0).toString());
+        String nama = model.getValueAt(row, 1).toString();
+
+        txtIdPasien.setText(String.valueOf(id));
+        txtNamaPasien.setText(nama);
+
+        String jkValue = model.getValueAt(row, 2).toString();
         cmbJenisKelamin.setSelectedItem(jkValue);
-        
-        txtTelepon.setText(model.getValueAt(row, 4).toString());
-        txtAlamat.setText(model.getValueAt(row, 5).toString());
+
+        Object tgl = model.getValueAt(row, 3);
+        txtTglLahir.setText(tgl != null ? tgl.toString() : "yyyy-MM-dd");
+
+        txtAlamat.setText(model.getValueAt(row, 4).toString());
+        txtTelepon.setText(model.getValueAt(row, 5).toString());
+
+        // Simpan agar bisa diakses oleh kelas lain (mis. FormKunjungan, FormResep, dll.)
+        setPasienTerpilih(id, nama);
+    }
+
+    private boolean validasiTglLahir() {
+        String tgl = txtTglLahir.getText().trim();
+        if (tgl.isEmpty() || tgl.equalsIgnoreCase("yyyy-MM-dd")) {
+            return true; // boleh dikosongkan
+        }
+        try {
+            Date.valueOf(tgl);
+            return true;
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this,
+                "Format Tanggal Lahir salah! Gunakan: yyyy-MM-dd",
+                "Validasi", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -82,49 +128,49 @@ public class FormPasien extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
+        txtIdPasien = new javax.swing.JTextField();
+        txtNamaPasien = new javax.swing.JTextField();
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
-        txtNamaPasien = new javax.swing.JTextField();
-        txtTelepon = new javax.swing.JTextField();
+        cmbJenisKelamin = new javax.swing.JComboBox();
+        txtTglLahir = new javax.swing.JTextField();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
         txtAlamat = new javax.swing.JTextField();
-        cmbJenisKelamin = new javax.swing.JComboBox<>();
+        txtTelepon = new javax.swing.JTextField();
         btnSimpan = new javax.swing.JButton();
-        btnUbah = new javax.swing.JButton();
         btnHapus = new javax.swing.JButton();
         btnBatal = new javax.swing.JButton();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        tblPasien = new javax.swing.JTable();
         txtCari = new javax.swing.JTextField();
         btnCari = new javax.swing.JButton();
-        txtIdPasien = new javax.swing.JTextField();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        tblPasien = new javax.swing.JTable();
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setTitle("Master Data Pasien");
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jLabel1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
-        jLabel1.setText("Form Pasien");
+        jLabel1.setFont(new java.awt.Font("Segoe UI", 0, 18)); // NOI18N
+        jLabel1.setText("   Data Pasien");
 
-        jLabel2.setText("Nama Pasien");
+        jLabel2.setText("ID Pasien");
 
-        jLabel3.setText("Jenis Kelamin (jk)");
+        jLabel3.setText("Nama Pasien");
 
-        jLabel4.setText("No Telepon");
+        jLabel4.setText("Jenis Kelamin");
 
-        jLabel5.setText("Alamat");
+        jLabel5.setText("Tanggal Lahir");
 
-        cmbJenisKelamin.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "-- Pilih --", "Laki-laki", "Perempuan" }));
+        cmbJenisKelamin.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "-- Pilih --", "Laki-laki", "Perempuan" }));
+
+        txtTglLahir.setText("yyyy-MM-dd");
+
+        jLabel6.setText("Alamat");
+
+        jLabel7.setText("Nomor Telepon");
 
         btnSimpan.setText("Simpan");
         btnSimpan.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSimpanActionPerformed(evt);
-            }
-        });
-
-        btnUbah.setText("Ubah");
-        btnUbah.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnUbahActionPerformed(evt);
             }
         });
 
@@ -142,19 +188,7 @@ public class FormPasien extends javax.swing.JFrame {
             }
         });
 
-        tblPasien.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {},
-            new String [] {
-                "No", "Kode", "Nama Pasien", "JK", "No Telp", "Alamat"
-            }
-        ));
-        tblPasien.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                tblPasienMouseClicked(evt);
-            }
-        });
-        jScrollPane1.setViewportView(tblPasien);
-
+        txtCari.setText("Cari Pasien.....");
         txtCari.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtCariActionPerformed(evt);
@@ -168,86 +202,115 @@ public class FormPasien extends javax.swing.JFrame {
             }
         });
 
+        tblPasien.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null},
+                {null, null, null, null, null, null}
+            },
+            new String [] {
+                "ID Pasien", "Nama Pasien", "Jenis Kelamin", "Tanggal Lahir", "Alamat", "No. Telepon"
+            }
+        ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+        });
+        tblPasien.getTableHeader().setReorderingAllowed(false);
+        tblPasien.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tblPasienMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(tblPasien);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 650, Short.MAX_VALUE)
+                .addGap(20, 20, 20)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel1)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel2)
-                            .addComponent(jLabel3)
-                            .addComponent(jLabel4)
-                            .addComponent(jLabel5)
-                            .addComponent(jLabel1))
-                        .addGap(42, 42, 42)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(btnSimpan)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnUbah)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnHapus)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(btnBatal)
-                                .addGap(0, 0, Short.MAX_VALUE))
-                            .addComponent(txtNamaPasien)
-                            .addComponent(txtTelepon)
-                            .addComponent(txtAlamat)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(txtIdPasien)
                             .addComponent(cmbJenisKelamin, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addGap(0, 0, Short.MAX_VALUE)
-                                .addComponent(txtIdPasien, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(txtAlamat, javax.swing.GroupLayout.PREFERRED_SIZE, 320, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel7, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(txtNamaPasien)
+                            .addComponent(txtTglLahir)
+                            .addComponent(txtTelepon, javax.swing.GroupLayout.PREFERRED_SIZE, 320, javax.swing.GroupLayout.PREFERRED_SIZE)))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(txtCari)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(btnCari)))
-                .addContainerGap())
+                        .addComponent(btnCari, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 658, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(35, 35, 35)
+                        .addComponent(btnSimpan, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(20, 20, 20)
+                        .addComponent(btnHapus, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(20, 20, 20)
+                        .addComponent(btnBatal, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(48, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel1)
-                    .addComponent(txtIdPasien, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(23, 23, 23)
+                .addComponent(jLabel1)
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel2)
+                    .addComponent(jLabel3))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txtIdPasien, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txtNamaPasien, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(cmbJenisKelamin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4)
-                    .addComponent(txtTelepon, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(jLabel5))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(cmbJenisKelamin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtTglLahir, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel5)
-                    .addComponent(txtAlamat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(20, 20, 20)
+                    .addComponent(jLabel6)
+                    .addComponent(jLabel7))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txtAlamat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtTelepon, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnSimpan)
-                    .addComponent(btnUbah)
                     .addComponent(btnHapus)
                     .addComponent(btnBatal))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 25, Short.MAX_VALUE)
+                .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(btnCari))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 220, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 371, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
         pack();
-        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void txtCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:txtCariActionPerformed
@@ -259,14 +322,17 @@ public class FormPasien extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Nama Pasien dan Jenis Kelamin wajib diisi!");
             return;
         }
+        if (!validasiTglLahir()) return;
 
         Pasien p = new Pasien();
         p.setNamaPasien(txtNamaPasien.getText().trim());
-        
-        // Konversi item ComboBox menjadi 'L' atau 'P' sesuai ENUM database kolom jk
+
         String jkDb = cmbJenisKelamin.getSelectedItem().toString().equals("Laki-laki") ? "L" : "P";
         p.setJk(jkDb);
-        
+
+        String tgl = txtTglLahir.getText().trim();
+        p.setTglLahir((tgl.isEmpty() || tgl.equalsIgnoreCase("yyyy-MM-dd")) ? null : tgl);
+
         p.setNoTelp(txtTelepon.getText().trim());
         p.setAlamat(txtAlamat.getText().trim());
         p.setNoRm("RM-" + System.currentTimeMillis() / 100000); // Penanganan otomatis kolom no_rm agar tidak kosong
@@ -278,34 +344,6 @@ public class FormPasien extends javax.swing.JFrame {
         }
     }//GEN-LAST:btnSimpanActionPerformed
 
-    private void btnUbahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:btnUbahActionPerformed
-        if (txtIdPasien.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Pills data pasien pada tabel terlebih dahulu!");
-            return;
-        }
-
-        if (txtNamaPasien.getText().trim().isEmpty() || cmbJenisKelamin.getSelectedIndex() == 0) {
-            JOptionPane.showMessageDialog(this, "Nama Pasien dan Jenis Kelamin wajib diisi!");
-            return;
-        }
-
-        Pasien p = new Pasien();
-        p.setIdPasien(Integer.parseInt(txtIdPasien.getText().trim()));
-        p.setNamaPasien(txtNamaPasien.getText().trim());
-        
-        String jkDb = cmbJenisKelamin.getSelectedItem().toString().equals("Laki-laki") ? "L" : "P";
-        p.setJk(jkDb);
-        
-        p.setNoTelp(txtTelepon.getText().trim());
-        p.setAlamat(txtAlamat.getText().trim());
-
-        if (pasienDao.updatePasien(p)) {
-            JOptionPane.showMessageDialog(this, "Data Pasien berhasil diperbarui!");
-            tampilkanDataTabel();
-            bersihkanForm();
-        }
-    }//GEN-LAST:btnUbahActionPerformed
-
     private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:btnHapusActionPerformed
         if (txtIdPasien.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Pilih data pasien pada tabel terlebih dahulu!");
@@ -313,8 +351,8 @@ public class FormPasien extends javax.swing.JFrame {
         }
 
         int id = Integer.parseInt(txtIdPasien.getText().trim());
-        int konfirmasi = JOptionPane.showConfirmDialog(this, 
-                "Apakah Anda yakin ingin menghapus data pasien dengan ID " + id + "?", 
+        int konfirmasi = JOptionPane.showConfirmDialog(this,
+                "Apakah Anda yakin ingin menghapus data pasien dengan ID " + id + "?",
                 "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
         if (konfirmasi == JOptionPane.YES_OPTION) {
@@ -322,6 +360,9 @@ public class FormPasien extends javax.swing.JFrame {
                 JOptionPane.showMessageDialog(this, "Data Pasien berhasil dihapus!");
                 tampilkanDataTabel();
                 bersihkanForm();
+                if (idPasienTerpilih == id) {
+                    setPasienTerpilih(-1, "");
+                }
             }
         }
     }//GEN-LAST:btnHapusActionPerformed
@@ -337,7 +378,12 @@ public class FormPasien extends javax.swing.JFrame {
 
     private void btnCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:btnCariActionPerformed
         String keyword = txtCari.getText().trim();
-        String[] kolom = {"No", "Kode", "Nama Pasien", "JK (L/P)", "No Telp", "Alamat"};
+        if (keyword.isEmpty() || keyword.equalsIgnoreCase("Cari Pasien.....")) {
+            tampilkanDataTabel();
+            return;
+        }
+
+        String[] kolom = {"ID Pasien", "Nama Pasien", "Jenis Kemlamin", "Tanggal Lahir", "Alamat", "No. Telepon"};
         DefaultTableModel model = new DefaultTableModel(null, kolom) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -346,20 +392,20 @@ public class FormPasien extends javax.swing.JFrame {
         };
 
         List<Pasien> list = pasienDao.cariPasien(keyword);
-        int no = 1;
         for (Pasien p : list) {
-            String jkFull = (p.getJk() != null && p.getJk().equalsIgnoreCase("L")) ? "Laki-laki" : "Perempuan";
-            model.addRow(new Object[]{
-                no++,
-                p.getIdPasien(),
-                p.getNamaPasien(),
-                jkFull,
-                p.getNoTelp(),
-                p.getAlamat()
-            });
+            model.addRow(buatBarisTabel(p));
         }
         tblPasien.setModel(model);
+
+        if (list.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Data tidak ditemukan!", "Info",
+                JOptionPane.INFORMATION_MESSAGE);
+        }
     }//GEN-LAST:btnCariActionPerformed
+
+    private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButton1ActionPerformed
 
     public static void main(String args[]) {
         try {
@@ -381,13 +427,14 @@ public class FormPasien extends javax.swing.JFrame {
     private javax.swing.JButton btnCari;
     private javax.swing.JButton btnHapus;
     private javax.swing.JButton btnSimpan;
-    private javax.swing.JButton btnUbah;
-    private javax.swing.JComboBox<String> cmbJenisKelamin;
+    private javax.swing.JComboBox cmbJenisKelamin;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable tblPasien;
     private javax.swing.JTextField txtAlamat;
@@ -395,5 +442,6 @@ public class FormPasien extends javax.swing.JFrame {
     private javax.swing.JTextField txtIdPasien;
     private javax.swing.JTextField txtNamaPasien;
     private javax.swing.JTextField txtTelepon;
+    private javax.swing.JTextField txtTglLahir;
     // End of variables declaration//GEN-END:variables
 }
