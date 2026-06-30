@@ -56,6 +56,24 @@ public class KunjunganDao {
         }
         return list;
     }
+    public int generateAutoId() {
+        int nextId = 240001; // ID Awal jika database kosong
+        String sql = "SELECT MAX(id_kunjungan) FROM kunjungan";
+        try (Connection conn = Koneksi.getKoneksi();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                int maxId = rs.getInt(1);
+                if (maxId > 0) {
+                    nextId = maxId + 1;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return nextId;
+    }
  
     public Kunjungan getKunjunganById(int idKunjungan) {
         String sql = BASE_SELECT + "WHERE k.id_kunjungan = ?";
