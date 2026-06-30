@@ -56,4 +56,8 @@ public class Dokter {
     public void setNoTelp(String noTelp) {
         this.noTelp = noTelp;
     }
+
+    public void setNoTelp(long noTelp) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
 }
