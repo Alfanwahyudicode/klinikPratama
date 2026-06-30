@@ -8,6 +8,7 @@ import javax.swing.table.DefaultTableModel;
 
 /**
  * Form GUI Resmi Terintegrasi Penuh untuk Manajemen Data Dokter.
+ *
  * @author VanZ
  */
 public class FormDokter extends javax.swing.JFrame {
@@ -58,10 +59,10 @@ public class FormDokter extends javax.swing.JFrame {
         }
 
         DefaultTableModel model = (DefaultTableModel) tblDokter.getModel();
-        txtIdDokter.setText(model.getValueAt(row, 1).toString());
-        txtNamaDokter.setText(model.getValueAt(row, 2).toString());
-        cmbSpesialis.setSelectedItem(model.getValueAt(row, 3).toString());
-        txtTelepon.setText(model.getValueAt(row, 4).toString());
+        txtIdDokter.setText(model.getValueAt(row, 0).toString());
+        txtNamaDokter.setText(model.getValueAt(row, 1).toString());
+        cmbSpesialis.setSelectedItem(model.getValueAt(row, 2).toString());
+        txtTelepon.setText(model.getValueAt(row, 3).toString());
     }
 
     @SuppressWarnings("unchecked")
@@ -145,6 +146,12 @@ public class FormDokter extends javax.swing.JFrame {
             }
         });
 
+        txtTelepon.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtTeleponActionPerformed(evt);
+            }
+        });
+
         jLabel2.setText("Nama Dokter");
 
         jLabel4.setFont(new java.awt.Font("Segoe UI", 0, 24)); // NOI18N
@@ -203,7 +210,6 @@ public class FormDokter extends javax.swing.JFrame {
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jLabel2)
                         .addGap(32, 32, 32)))
-                .addGap(18, 18, 18)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(jLabel5))
@@ -238,40 +244,40 @@ public class FormDokter extends javax.swing.JFrame {
             return;
         }
 
+        String noTelepon = txtTelepon.getText().trim();
+        if (!noTelepon.matches("\\d+")) {
+            JOptionPane.showMessageDialog(this, "No Telepon harus diisi dengan angka saja!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         Dokter d = new Dokter();
         d.setNamaDokter(txtNamaDokter.getText().trim());
         d.setSpesialisasi(cmbSpesialis.getSelectedItem().toString());
         d.setNoTelp(txtTelepon.getText().trim());
 
-        if (dokterDao.tambahDokter(d)) {
-            JOptionPane.showMessageDialog(this, "Data Dokter berhasil disimpan!");
-            tampilkanDataTabel();
-            bersihkanForm();
+        String idText = txtIdDokter.getText().trim();
+        boolean isUpdate = !idText.isEmpty();
+
+        if (isUpdate) {
+            // txtIdDokter terisi -> baris tabel sedang dipilih -> mode UBAH
+            d.setIdDokter(Integer.parseInt(idText));
+            if (dokterDao.updateDokter(d)) {
+                JOptionPane.showMessageDialog(this, "Data Dokter berhasil diperbarui!");
+                tampilkanDataTabel();
+                bersihkanForm();
+            }
+        } else {
+            // txtIdDokter kosong -> data baru -> mode TAMBAH
+            if (dokterDao.tambahDokter(d)) {
+                JOptionPane.showMessageDialog(this, "Data Dokter berhasil disimpan!");
+                tampilkanDataTabel();
+                bersihkanForm();
+            }
         }
     }//GEN-LAST:btnSimpanActionPerformed
 
     private void btnUbahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:btnUbahActionPerformed
-        if (txtIdDokter.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Pilih data pada tabel yang ingin diubah terlebih dahulu!");
-            return;
-        }
-
-        if (txtNamaDokter.getText().trim().isEmpty() || cmbSpesialis.getSelectedIndex() == 0) {
-            JOptionPane.showMessageDialog(this, "Nama Dokter dan Spesialis wajib diisi!");
-            return;
-        }
-
-        Dokter d = new Dokter();
-        d.setIdDokter(Integer.parseInt(txtIdDokter.getText().trim()));
-        d.setNamaDokter(txtNamaDokter.getText().trim());
-        d.setSpesialisasi(cmbSpesialis.getSelectedItem().toString());
-        d.setNoTelp(txtTelepon.getText().trim());
-
-        if (dokterDao.updateDokter(d)) {
-            JOptionPane.showMessageDialog(this, "Data Dokter berhasil diperbarui!");
-            tampilkanDataTabel();
-            bersihkanForm();
-        }
+        // tidak di pakai
     }//GEN-LAST:btnUbahActionPerformed
 
     private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:btnHapusActionPerformed
@@ -326,6 +332,10 @@ public class FormDokter extends javax.swing.JFrame {
         }
         tblDokter.setModel(model);
     }//GEN-LAST:btnCariActionPerformed
+
+    private void txtTeleponActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTeleponActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtTeleponActionPerformed
 
     public static void main(String args[]) {
         try {
