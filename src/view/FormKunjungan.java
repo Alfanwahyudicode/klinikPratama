@@ -57,14 +57,14 @@ public class FormKunjungan extends javax.swing.JFrame {
     }
     
     private String formatIdKunjungan(int id) {
-        return String.format("KJ%03d", id);
-    }
- 
+        return String.valueOf(id);
+}
+
     private int parseIdKunjungan(String teks) {
         String angka = teks == null ? "" : teks.replaceAll("[^0-9]", "");
         return angka.isEmpty() ? 0 : Integer.parseInt(angka);
     }
-    
+
     private void muatComboPasien() {
         listPasien = pasienDao.getAllPasien();
         DefaultComboBoxModel model = new DefaultComboBoxModel();
