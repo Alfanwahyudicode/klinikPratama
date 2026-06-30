@@ -1,23 +1,34 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package model;
 
 /**
+ * Model class Pasien - Sesuai 100% dengan struktur tabel database.
  *
  * @author VanZ
  */
 public class Pasien {
-    
+
     private int idPasien;
     private String noRm;
     private String namaPasien;
-    private String jenisKelamin;
+    private String jk; // Menggunakan 'jk' untuk mencerminkan enum('L','P')
+    private String tglLahir; // Sementara String format (YYYY-MM-DD) atau bisa dikosongkan jika belum ada di GUI
     private String alamat;
-    private String noHp;
-    private String tanggalLahir;
+    private String noTelp; // Sesuai kolom database: no_telp
 
+    public Pasien() {
+    }
+
+    public Pasien(int idPasien, String noRm, String namaPasien, String jk, String tglLahir, String alamat, String noTelp) {
+        this.idPasien = idPasien;
+        this.noRm = noRm;
+        this.namaPasien = namaPasien;
+        this.jk = jk;
+        this.tglLahir = tglLahir;
+        this.alamat = alamat;
+        this.noTelp = noTelp;
+    }
+
+    // Getter dan Setter
     public int getIdPasien() {
         return idPasien;
     }
@@ -42,12 +53,20 @@ public class Pasien {
         this.namaPasien = namaPasien;
     }
 
-    public String getJenisKelamin() {
-        return jenisKelamin;
+    public String getJk() {
+        return jk;
     }
 
-    public void setJenisKelamin(String jenisKelamin) {
-        this.jenisKelamin = jenisKelamin;
+    public void setJk(String jk) {
+        this.jk = jk;
+    }
+
+    public String getTglLahir() {
+        return tglLahir;
+    }
+
+    public void setTglLahir(String tglLahir) {
+        this.tglLahir = tglLahir;
     }
 
     public String getAlamat() {
@@ -58,34 +77,11 @@ public class Pasien {
         this.alamat = alamat;
     }
 
-    public String getNoHp() {
-        return noHp;
-    }
-
-    public void setNoHp(String noHp) {
-        this.noHp = noHp;
-    }
-    public void SetTanggalLahir( String tanggalLahir) {
-        this.tanggalLahir = tanggalLahir;
-    }
-
-    public void setTanggalLahir(String string) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    public void setNoTelp(String string) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    public String getTanggalLahir() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
     public String getNoTelp() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return noTelp;
     }
 
-    public Object getNoKamar() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public void setNoTelp(String noTelp) {
+        this.noTelp = noTelp;
     }
-}   
+}

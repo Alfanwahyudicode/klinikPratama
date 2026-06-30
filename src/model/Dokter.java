@@ -1,7 +1,7 @@
 package model;
 
 /**
- * Model class untuk data Dokter Berdasarkan database Klinik Pratama
+ * Model class untuk mencerminkan data tabel dokter dari database.
  *
  * @author VanZ
  */
@@ -12,10 +12,11 @@ public class Dokter {
     private String spesialisasi;
     private String noTelp;
 
-
+    // Constructor Kosong
     public Dokter() {
     }
 
+    // Constructor dengan Parameter
     public Dokter(int idDokter, String namaDokter, String spesialisasi, String noTelp) {
         this.idDokter = idDokter;
         this.namaDokter = namaDokter;
@@ -23,6 +24,7 @@ public class Dokter {
         this.noTelp = noTelp;
     }
 
+    // Getter dan Setter
     public int getIdDokter() {
         return idDokter;
     }
@@ -53,14 +55,5 @@ public class Dokter {
 
     public void setNoTelp(String noTelp) {
         this.noTelp = noTelp;
-    }
-
-    @Override
-    public String toString() {
-        return idDokter + " | " + namaDokter;
-    }
-
-    public void setIdDokter(String IdDokter) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 }
