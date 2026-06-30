@@ -12,10 +12,8 @@ import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
 /**
- *
  * @author VanZ
  */
-
 public class FormPemeriksaan extends javax.swing.JFrame {
 
     private PemeriksaanDao dao = new PemeriksaanDao();
@@ -52,6 +50,7 @@ public class FormPemeriksaan extends javax.swing.JFrame {
             cmbKunjungan.addItem("Tidak ada kunjungan yang belum diperiksa");
         } else {
             for (Object[] k : listKunjungan) {
+                // Sesuai internal DAO: k[1] No RM, k[2] Nama Pasien, k[3] Nama Dokter
                 cmbKunjungan.addItem(k[1] + " - " + k[2] + " - " + k[3]);
             }
         }
@@ -87,12 +86,12 @@ public class FormPemeriksaan extends javax.swing.JFrame {
         for (Object[] r : list) {
             model.addRow(new Object[]{
                 no++, // Kolom 0: Nomor urut tabel
-                r[2], // Kolom 1: Pasien (Mengambil indeks ke-2 dari database)
-                r[3], // Kolom 2: Dokter (Mengambil indeks ke-3 dari database)
-                r[4], // Kolom 3: Diagnosa (Mengambil indeks ke-4 dari database)
-                r[5], // Kolom 4: Tindakan (Mengambil indeks ke-5 dari database)
-                r[7], // Kolom 5: Catatan (Mengambil indeks ke-7 dari database)
-                r[6] // Kolom 6: Biaya (Mengambil indeks ke-6 dari database)
+                r[1], // Kolom 1: Pasien
+                r[2], // Kolom 2: Dokter
+                r[3], // Kolom 3: Diagnosa
+                r[4], // Kolom 4: Tindakan
+                r[5], // Kolom 5: Catatan
+                r[6] // Kolom 6: Biaya
             });
         }
     }
@@ -103,6 +102,9 @@ public class FormPemeriksaan extends javax.swing.JFrame {
         txtCatatan.setText("");
         txtBiayaTindakan.setText("");
         idPemeriksaanTerpilih = 0;
+
+        // PERBAIKAN: Reset label informasi kunjungan agar tidak menggantung data lama
+        lblInfoKunjungan.setText("<html> <br>Pasien: -<br>Dokter: -<br>Keluhan: -</html>");
 
         if (cmbKunjungan.getItemCount() > 0) {
             cmbKunjungan.setSelectedIndex(0);
@@ -369,7 +371,12 @@ public class FormPemeriksaan extends javax.swing.JFrame {
             return;
         }
 
+        // PERBAIKAN OPTIMASI: Validasi index combobox agar terhindar dari IndexOutOfBoundsException
         int index = cmbKunjungan.getSelectedIndex();
+        if (index == -1) {
+            JOptionPane.showMessageDialog(this, "Silakan pilih kunjungan terlebih dahulu.");
+            return;
+        }
         Object[] kunjunganTerpilih = listKunjungan.get(index);
 
         Pemeriksaan pe = new Pemeriksaan();
@@ -426,23 +433,28 @@ public class FormPemeriksaan extends javax.swing.JFrame {
     private void tblPemeriksaanMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblPemeriksaanMouseClicked
         int row = tblPemeriksaan.getSelectedRow();
 
-        if (row >= 0 && row < listDataTabel.size()) {
-            Object[] p = listDataTabel.get(row);
+        if (row >= 0) {
+            // PERBAIKAN: Antisipasi index bergeser jika tabel di-sort (Urutkan otomatis lewat GUI)
+            int modelRow = tblPemeriksaan.convertRowIndexToModel(row);
 
-            idPemeriksaanTerpilih = (Integer) p[0]; // ID Pemeriksaan yang akan Anda oper ke Form Resep
+            if (modelRow >= 0 && modelRow < listDataTabel.size()) {
+                Object[] p = listDataTabel.get(modelRow);
 
-            // Ambil data lengkap (termasuk catatan) dari database via id
-            Pemeriksaan pe = dao.getPemeriksaanById(idPemeriksaanTerpilih);
-            if (pe != null) {
-                txtDiagnosa.setText(pe.getDiagnosa());
-                txtTindakan.setText(pe.getTindakan());
-                txtCatatan.setText(pe.getCatatan()); // Catatan pemeriksaan diketik/diambil di sini
-                txtBiayaTindakan.setText(pe.getBiayaTindakan() == null ? "" : pe.getBiayaTindakan().toPlainString());
+                idPemeriksaanTerpilih = (Integer) p[0]; // ID Pemeriksaan
+
+                // Ambil data lengkap (termasuk catatan) dari database via id
+                Pemeriksaan pe = dao.getPemeriksaanById(idPemeriksaanTerpilih);
+                if (pe != null) {
+                    txtDiagnosa.setText(pe.getDiagnosa());
+                    txtTindakan.setText(pe.getTindakan());
+                    txtCatatan.setText(pe.getCatatan());
+                    txtBiayaTindakan.setText(pe.getBiayaTindakan() == null ? "" : pe.getBiayaTindakan().toPlainString());
+                }
+
+                // PERBAIKAN BUG UTAMA: Menyesuaikan indeks array (p[1] = Pasien, p[2] = Dokter)
+                lblInfoKunjungan.setText("<html>Pasien: " + p[1]
+                        + "<br>Dokter: " + p[2] + "</html>");
             }
-
-            // Menghapus baris teks No RM dari label informasi bawah
-            lblInfoKunjungan.setText("<html>Pasien: " + p[2]
-                    + "<br>Dokter: " + p[3] + "</html>");
         }
     }//GEN-LAST:event_tblPemeriksaanMouseClicked
 
@@ -450,28 +462,24 @@ public class FormPemeriksaan extends javax.swing.JFrame {
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-    /* Set the Nimbus look and feel */
-    //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-    /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
-         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
-     */
-    try {
-        for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-            if ("Nimbus".equals(info.getName())) {
-                javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                break;
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
             }
+        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(FormPemeriksaan.class.getName())
+                    .log(java.util.logging.Level.SEVERE, null, ex);
         }
-    } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-        java.util.logging.Logger.getLogger(FormPemeriksaan.class.getName())
-                .log(java.util.logging.Level.SEVERE, null, ex);
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(() -> new FormPemeriksaan().setVisible(true));
     }
-    //</editor-fold>
-
-    /* Create and display the form */
-    java.awt.EventQueue.invokeLater(() -> new FormPemeriksaan().setVisible(true));
-}
-
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnBatal;
     private javax.swing.JButton btnCari;
