@@ -25,7 +25,7 @@ public class FormPembayaran extends javax.swing.JFrame {
     tampilkanData();
     tambahListenerAutoHitung();
 
-    cmbIdKunjungan.setSelectedItem(idKunjunganEksternal);
+    cmbIdKunjungan.setSelectedItem(String.valueOf(idKunjunganEksternal));
     cariDataKunjungan();
 }
     
@@ -33,7 +33,7 @@ public class FormPembayaran extends javax.swing.JFrame {
         cmbIdKunjungan.removeAllItems();
         List<Integer> list = pembayaranDao.getAllIdKunjungan();
         for (Integer id : list) {
-            cmbIdKunjungan.addItem(Id);
+            cmbIdKunjungan.addItem(String.valueOf(id));
         }
     }
 
@@ -105,7 +105,7 @@ public class FormPembayaran extends javax.swing.JFrame {
     private void cariDataKunjungan() {
         try {
         if (cmbIdKunjungan.getSelectedItem() == null) return;
-        int idKunjungan = (Integer) cmbIdKunjungan.getSelectedItem();
+        int idKunjungan = Integer.parseInt(cmbIdKunjungan.getSelectedItem().toString());
         txtNamaPasien.setText(pembayaranDao.getNamaPasienByKunjungan(idKunjungan));
         txtTotalTindakan.setText(pembayaranDao.getTotalTindakanByKunjungan(idKunjungan).toPlainString());
         txtTotalObat.setText(pembayaranDao.getTotalObatByKunjungan(idKunjungan).toPlainString());
@@ -471,7 +471,7 @@ public class FormPembayaran extends javax.swing.JFrame {
         Object kodePembayaranRow = tblPembayaran.getValueAt(row, 5);
  
         txtIdBayar.setText(String.valueOf(p.getIdBayar()));
-        cmbIdKunjungan.setSelectedItem(p.getIdKunjungan());        txtTanggalBayar.setText(p.getTglBayar());
+        cmbIdKunjungan.setSelectedItem(String.valueOf(p.getIdKunjungan()));        txtTanggalBayar.setText(p.getTglBayar());
         txtTotalTindakan.setText(p.getTotalTindakan() != null ? p.getTotalTindakan().toPlainString() : "0");
         txtTotalObat.setText(p.getTotalObat() != null ? p.getTotalObat().toPlainString() : "0");
         cmbMetodeBayar.setSelectedItem(metodeBayarRow != null ? metodeBayarRow.toString() : "Tunai");
@@ -506,7 +506,7 @@ public class FormPembayaran extends javax.swing.JFrame {
                 p.setIdBayar(Integer.parseInt(txtIdBayar.getText().trim()));
             }
  
-            p.setIdKunjungan((Integer) cmbIdKunjungan.getSelectedItem());
+            p.setIdKunjungan(Integer.parseInt(cmbIdKunjungan.getSelectedItem().toString()));
             p.setTotalTindakan(new BigDecimal(txtTotalTindakan.getText().trim()));
             p.setTotalObat(new BigDecimal(txtTotalObat.getText().trim()));
             p.setTotalBayar(new BigDecimal(txtTotalBayar.getText().trim()));
@@ -606,7 +606,7 @@ public class FormPembayaran extends javax.swing.JFrame {
             logger.log(java.util.logging.Level.SEVERE, null, ex);
         }
  
-        java.awt.EventQueue.invokeLater(() -> new FormPembayaran().setVisible(true));
+        java.awt.EventQueue.invokeLater(() -> new FormPembayaran(0).setVisible(true));
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
