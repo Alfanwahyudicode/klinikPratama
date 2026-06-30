@@ -20,7 +20,6 @@ import javax.swing.JOptionPane;
  */
 public class KunjunganDao {
  
-    // Query dasar dengan JOIN ke pasien & dokter agar nama langsung tersedia
     private static final String BASE_SELECT =
             "SELECT k.id_kunjungan, k.id_pasien, k.id_dokter, k.tanggal_kunjungan, "
             + "k.keluhan, k.status, p.nama_pasien, d.nama_dokter "
@@ -28,7 +27,6 @@ public class KunjunganDao {
             + "JOIN pasien p ON k.id_pasien = p.id_pasien "
             + "JOIN dokter d ON k.id_dokter = d.id_dokter ";
  
-    // Mapping satu baris ResultSet menjadi objek Kunjungan
     private Kunjungan mapRow(ResultSet rs) throws SQLException {
         Kunjungan k = new Kunjungan();
         k.setIdKunjungan(rs.getInt("id_kunjungan"));
@@ -42,7 +40,6 @@ public class KunjunganDao {
         return k;
     }
  
-    // Ambil semua data kunjungan
     public List<Kunjungan> getAllKunjungan() {
         List<Kunjungan> list = new ArrayList<>();
         String sql = BASE_SELECT + "ORDER BY k.id_kunjungan DESC";
@@ -60,7 +57,6 @@ public class KunjunganDao {
         return list;
     }
  
-    // Ambil satu kunjungan berdasarkan id
     public Kunjungan getKunjunganById(int idKunjungan) {
         String sql = BASE_SELECT + "WHERE k.id_kunjungan = ?";
  
@@ -80,7 +76,6 @@ public class KunjunganDao {
         return null;
     }
  
-    // Filter kunjungan per tanggal, dokter, dan/atau status (semua parameter opsional, isi null jika tidak dipakai)
     public List<Kunjungan> filterKunjungan(Date tanggal, Integer idDokter, String status) {
         List<Kunjungan> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(BASE_SELECT + "WHERE 1=1 ");
@@ -121,7 +116,6 @@ public class KunjunganDao {
         return list;
     }
  
-    // Cari kunjungan berdasarkan nama pasien
     public List<Kunjungan> cariKunjunganByNamaPasien(String keyword) {
         List<Kunjungan> list = new ArrayList<>();
         String sql = BASE_SELECT + "WHERE p.nama_pasien LIKE ? ORDER BY k.id_kunjungan DESC";
@@ -142,7 +136,6 @@ public class KunjunganDao {
         return list;
     }
  
-    // Tambah kunjungan baru (status default 'daftar')
     public boolean tambahKunjungan(Kunjungan k) {
         String sql = "INSERT INTO kunjungan (id_pasien, id_dokter, tanggal_kunjungan, keluhan, status) "
                 + "VALUES (?, ?, ?, ?, ?)";
@@ -163,9 +156,8 @@ public class KunjunganDao {
         }
     }
  
-    // Update data kunjungan (pasien, dokter, tanggal, keluhan)
     public boolean updateKunjungan(Kunjungan k) {
-        String sql = "UPDATE kunjungan SET id_pasien=?, id_dokter=?, tanggal_kunjungan=?, keluhan=? "
+        String sql = "UPDATE kunjungan SET id_pasien=?, id_dokter=?, tanggal_kunjungan=?, keluhan=?, status=? "
                 + "WHERE id_kunjungan=?";
  
         try (Connection conn = Koneksi.getKoneksi();
@@ -175,7 +167,8 @@ public class KunjunganDao {
             ps.setInt(2, k.getIdDokter());
             ps.setDate(3, k.getTanggalKunjungan());
             ps.setString(4, k.getKeluhan());
-            ps.setInt(5, k.getIdKunjungan());
+            ps.setString(5, k.getStatus());
+            ps.setInt(6, k.getIdKunjungan());
  
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -184,7 +177,6 @@ public class KunjunganDao {
         }
     }
  
-    // Update status kunjungan saja: daftar, selesai, atau batal
     public boolean updateStatusKunjungan(int idKunjungan, String status) {
         String sql = "UPDATE kunjungan SET status=? WHERE id_kunjungan=?";
  
@@ -201,7 +193,6 @@ public class KunjunganDao {
         }
     }
  
-    // Hapus kunjungan (umumnya untuk status 'batal' yang ingin dihapus permanen)
     public boolean hapusKunjungan(int idKunjungan) {
         String sql = "DELETE FROM kunjungan WHERE id_kunjungan=?";
  
@@ -214,5 +205,57 @@ public class KunjunganDao {
             JOptionPane.showMessageDialog(null, "Gagal menghapus kunjungan: " + e.getMessage());
             return false;
         }
+    }
+    
+    public int getNextIdKunjungan() {
+        String sql = "SELECT AUTO_INCREMENT FROM information_schema.TABLES "
+                + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'kunjungan'";
+
+        try (Connection conn = Koneksi.getKoneksi();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            if (rs.next()) {
+                int next = rs.getInt(1);
+                return next > 0 ? next : 1;
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Gagal mengambil ID kunjungan berikutnya: " + e.getMessage());
+        }
+        return 1;
+    }
+
+        public List<Kunjungan> cariKunjungan(String keyword) {
+        List<Kunjungan> list = new ArrayList<>();
+        String sql = BASE_SELECT
+                + "WHERE p.nama_pasien LIKE ? OR k.id_kunjungan = ? OR k.id_pasien = ? "
+                + "ORDER BY k.id_kunjungan DESC";
+
+        String angkaSaja = keyword == null ? "" : keyword.replaceAll("[^0-9]", "");
+        int idCocok = -1;
+        if (!angkaSaja.isEmpty()) {
+            try {
+                idCocok = Integer.parseInt(angkaSaja);
+            } catch (NumberFormatException ignored) {
+                idCocok = -1;
+            }
+        }
+
+        try (Connection conn = Koneksi.getKoneksi();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, "%" + keyword + "%");
+            ps.setInt(2, idCocok);
+            ps.setInt(3, idCocok);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapRow(rs));
+                }
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Gagal mencari data kunjungan: " + e.getMessage());
+        }
+        return list;
     }
 }
