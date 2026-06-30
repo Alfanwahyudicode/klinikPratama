@@ -7,6 +7,7 @@ package view;
 import dao.ObatDao;
 import model.Obat;
 import java.math.BigDecimal;
+import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
@@ -21,25 +22,44 @@ public class FormObat extends javax.swing.JFrame {
     
     private final ObatDao obatDao = new ObatDao();
 
+    // Menyimpan daftar Obat yang sedang ditampilkan di tblObat,
+    // urutannya selalu sinkron dengan baris tabel (index baris == index list).
+    // Dipakai supaya tombol Ubah/Hapus selalu tahu id_obat (primary key) asli
+    // dari baris yang dipilih, tanpa harus mem-parsing teks "ID Obat" di tabel.
+    private List<Obat> currentList;
+
     /**
      * Creates new form FormObat
      */
     public FormObat() {
         initComponents();
+        // ID Obat dibuat otomatis (read-only) dan tidak boleh diisi manual oleh user
+        txtIdObat.setEditable(false);
         tampilkanDataTabel();
+        isiIdObatOtomatis();
+    }
+    
+    // Menampilkan preview kode obat berikutnya (contoh: OB-0001) ke txtIdObat
+    private void isiIdObatOtomatis() {
+        txtIdObat.setText(obatDao.getKodeObatBerikutnya());
     }
     
     private void bersihkanForm() {
-        txtIdObat.setText("");
         txtNamaObat.setText("");
         cmbSatuan.setSelectedIndex(0);
         txtStok.setText("");
         txtHaraJual.setText("");
         txtCari.setText("");
         tblObat.clearSelection();
+        isiIdObatOtomatis();
     }
     
     private void tampilkanDataTabel() {
+        currentList = obatDao.getAllObat();
+        isiTabel(currentList);
+    }
+    
+    private void isiTabel(List<Obat> list) {
         String[] kolom = {"No", "ID Obat", "Nama Obat", "Satuan", "Stok", "Harga"};
         DefaultTableModel model = new DefaultTableModel(null, kolom) {
             @Override
@@ -47,38 +67,10 @@ public class FormObat extends javax.swing.JFrame {
         };
         
         int no = 1;
-        for (Obat o : obatDao.getAllObat()) {
-            model.addRow(new Object[]{
-                no++,
-                o.getIdObat(),
-                o.getNamaObat(),
-                o.getSatuan(),
-                o.getStok(),
-                o.getHargaJual()
-            });
-        }
-        tblObat.setModel(model);
-    }
-    
-    private void cariData() {
-        String keyword = txtCari.getText().trim();
-        String[] kolom = {"No", "ID Obat", "Nama Obat", "Satuan", "Stok", "Harga"};
-        DefaultTableModel model = new DefaultTableModel(null, kolom) {
-            @Override
-            public boolean isCellEditable(int row, int col) {
-                return false;
-            }
-        };
- 
-        java.util.List<Obat> list = keyword.isEmpty()
-                ? obatDao.getAllObat()
-                : obatDao.cariObat(keyword);
- 
-        int no = 1;
         for (Obat o : list) {
             model.addRow(new Object[]{
                 no++,
-                o.getIdObat(),
+                o.getKodeObat(),
                 o.getNamaObat(),
                 o.getSatuan(),
                 o.getStok(),
@@ -88,8 +80,13 @@ public class FormObat extends javax.swing.JFrame {
         tblObat.setModel(model);
     }
     
-    private int cariIdDariTabel(int baris) {
-        return Integer.parseInt(tblObat.getValueAt(baris, 1).toString());
+    // Mencari data obat berdasarkan NAMA OBAT (kolom pencarian txtCari)
+    private void cariData() {
+        String keyword = txtCari.getText().trim();
+        currentList = keyword.isEmpty()
+                ? obatDao.getAllObat()
+                : obatDao.cariObat(keyword);
+        isiTabel(currentList);
     }
 
     /**
@@ -127,14 +124,15 @@ public class FormObat extends javax.swing.JFrame {
         txtStok = new javax.swing.JTextField();
         jLabel5 = new javax.swing.JLabel();
         txtHaraJual = new javax.swing.JTextField();
+        jLabel6 = new javax.swing.JLabel();
         btnTambah = new javax.swing.JButton();
+        btnUbah = new javax.swing.JButton();
         btnHapus = new javax.swing.JButton();
         btnBatal = new javax.swing.JButton();
         txtCari = new javax.swing.JTextField();
         btnCari = new javax.swing.JButton();
         jScrollPane2 = new javax.swing.JScrollPane();
         tblObat = new javax.swing.JTable();
-        jLabel6 = new javax.swing.JLabel();
 
         jMenuItem1.setText("jMenuItem1");
 
@@ -183,12 +181,7 @@ public class FormObat extends javax.swing.JFrame {
 
         jLabel3.setText("Satuan");
 
-        cmbSatuan.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "kapsul", "sirup", "tablet", "botol" }));
-        cmbSatuan.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                cmbSatuanActionPerformed(evt);
-            }
-        });
+        cmbSatuan.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Tablet", "Strip", "Botol", "Kapsul", "Pcs" }));
 
         jLabel4.setText("Stok");
 
@@ -207,12 +200,16 @@ public class FormObat extends javax.swing.JFrame {
             }
         });
 
-        btnTambah.setText("Simpan");
+        jLabel6.setText("Rp");
+
+        btnTambah.setText("Tambah");
         btnTambah.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnTambahActionPerformed(evt);
             }
         });
+
+        btnUbah.setText("Ubah");
 
         btnHapus.setText("Hapus");
         btnHapus.addActionListener(new java.awt.event.ActionListener() {
@@ -259,92 +256,97 @@ public class FormObat extends javax.swing.JFrame {
         });
         jScrollPane2.setViewportView(tblObat);
 
-        jLabel6.setFont(new java.awt.Font("Segoe UI", 0, 24)); // NOI18N
-        jLabel6.setText("   OBAT");
-
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(49, 49, 49)
+                .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(cmbSatuan, javax.swing.GroupLayout.PREFERRED_SIZE, 330, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel3)
-                            .addComponent(txtIdObat, javax.swing.GroupLayout.PREFERRED_SIZE, 330, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(40, 40, 40)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jLabel4)
-                            .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 73, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtStok, javax.swing.GroupLayout.PREFERRED_SIZE, 330, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtNamaObat, javax.swing.GroupLayout.PREFERRED_SIZE, 330, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(jLabel5)
-                    .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 747, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(txtHaraJual, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                            .addComponent(btnTambah)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(btnHapus)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(btnBatal)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, 372, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                            .addComponent(btnCari))))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(jLabel5)
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(txtHaraJual, javax.swing.GroupLayout.PREFERRED_SIZE, 798, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel6))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(btnTambah)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(btnUbah)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnHapus)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnBatal)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, 438, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(btnCari, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(0, 16, Short.MAX_VALUE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane2)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                        .addComponent(cmbSatuan, javax.swing.GroupLayout.Alignment.LEADING, 0, 303, Short.MAX_VALUE)
+                                        .addComponent(txtIdObat, javax.swing.GroupLayout.Alignment.LEADING))
+                                    .addComponent(jLabel3))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(txtStok)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 73, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                            .addComponent(jLabel4))
+                                        .addGap(0, 0, Short.MAX_VALUE))
+                                    .addComponent(txtNamaObat))))
+                        .addContainerGap())))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(23, 23, 23)
-                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jLabel3)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(cmbSatuan, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(28, 28, 28)
-                        .addComponent(txtIdObat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtNamaObat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(22, 22, 22)
-                        .addComponent(jLabel4)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtStok, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addGap(18, 18, 18)
-                .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 10, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(txtHaraJual, javax.swing.GroupLayout.PREFERRED_SIZE, 26, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(27, 27, 27)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txtIdObat)
+                    .addComponent(txtNamaObat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(jLabel4))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(cmbSatuan, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txtStok, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel5)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txtHaraJual, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel6))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnTambah)
-                    .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnCari)
+                    .addComponent(btnUbah)
                     .addComponent(btnHapus)
-                    .addComponent(btnBatal))
+                    .addComponent(btnBatal)
+                    .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(btnCari))
                 .addGap(18, 18, 18)
                 .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 265, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(90, 90, 90))
+                .addContainerGap(168, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void txtIdObatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtIdObatActionPerformed
-        // tidak digunakan
+        // ID Obat bersifat read-only (otomatis), tidak digunakan
     }//GEN-LAST:event_txtIdObatActionPerformed
 
     private void txtStokActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtStokActionPerformed
@@ -382,6 +384,8 @@ public class FormObat extends javax.swing.JFrame {
             return;
         }
 
+        // ID Obat (kode_obat) di-generate OTOMATIS di dalam ObatDao.tambahObat(),
+        // sehingga form ini hanya mengirim data nama, satuan, stok, dan harga.
         Obat obat = new Obat();
         obat.setNamaObat(namaObat);
         obat.setSatuan(satuan);
@@ -389,29 +393,86 @@ public class FormObat extends javax.swing.JFrame {
         obat.setHargaJual(hargaJual);
 
         if (obatDao.tambahObat(obat)) {
-            JOptionPane.showMessageDialog(this, "Data obat berhasil ditambahkan!");
+            JOptionPane.showMessageDialog(this,
+                "Data obat berhasil ditambahkan dengan ID Obat: " + obat.getKodeObat()
+                + "\nData ini otomatis tersedia untuk dipilih di Form Resep.");
             tampilkanDataTabel();
             bersihkanForm();
         }
     }//GEN-LAST:event_btnTambahActionPerformed
 
-    private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
+    private void btnUbahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnUbahActionPerformed
         int baris = tblObat.getSelectedRow();
-        if (baris == -1) {
-            JOptionPane.showMessageDialog(this, "Pilih data obat yang ingin dihapus!");
+        if (baris == -1 || currentList == null || baris >= currentList.size()) {
+            JOptionPane.showMessageDialog(this, "Pilih data obat pada tabel terlebih dahulu!");
             return;
         }
 
+        String namaObat  = txtNamaObat.getText().trim();
+        String satuan    = cmbSatuan.getSelectedItem().toString();
+        String stokStr   = txtStok.getText().trim();
+        String hargaStr  = txtHaraJual.getText().trim();
+
+        if (namaObat.isEmpty() || stokStr.isEmpty() || hargaStr.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nama Obat, Stok, dan Harga Jual wajib diisi!");
+            return;
+        }
+
+        int stok;
+        BigDecimal hargaJual;
+        try {
+            stok      = Integer.parseInt(stokStr);
+            hargaJual = new BigDecimal(hargaStr);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Stok harus angka bulat dan Harga harus angka valid!");
+            return;
+        }
+
+        if (stok < 0 || hargaJual.compareTo(BigDecimal.ZERO) < 0) {
+            JOptionPane.showMessageDialog(this, "Stok dan Harga tidak boleh negatif!");
+            return;
+        }
+
+        // Ambil id_obat (primary key asli) dari baris yang dipilih, BUKAN dari teks ID Obat
+        Obat dipilih = currentList.get(baris);
+
+        Obat obat = new Obat();
+        obat.setIdObat(dipilih.getIdObat());
+        obat.setKodeObat(dipilih.getKodeObat());
+        obat.setNamaObat(namaObat);
+        obat.setSatuan(satuan);
+        obat.setStok(stok);
+        obat.setHargaJual(hargaJual);
+
+        if (obatDao.updateObat(obat)) {
+            JOptionPane.showMessageDialog(this, "Data obat berhasil diubah!");
+            tampilkanDataTabel();
+            bersihkanForm();
+        }
+    }//GEN-LAST:event_btnUbahActionPerformed
+
+    private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
+        int baris = tblObat.getSelectedRow();
+        if (baris == -1 || currentList == null || baris >= currentList.size()) {
+            JOptionPane.showMessageDialog(this, "Pilih data obat pada tabel yang ingin dihapus!");
+            return;
+        }
+
+        Obat dipilih = currentList.get(baris);
+
         int konfirmasi = JOptionPane.showConfirmDialog(
                 this,
-                "Apakah Anda yakin ingin menghapus data obat ini?",
+                "Apakah Anda yakin ingin menghapus data obat \"" + dipilih.getNamaObat() + "\" ("
+                        + dipilih.getKodeObat() + ")?",
                 "Konfirmasi Hapus",
                 JOptionPane.YES_NO_OPTION);
 
         if (konfirmasi == JOptionPane.YES_OPTION) {
-            int idObat = cariIdDariTabel(baris);
-            if (obatDao.hapusObat(idObat)) {
-                JOptionPane.showMessageDialog(this, "Data obat berhasil dihapus!");
+            // Hapus berdasarkan id_obat (primary key) dari data yang dipilih di tblObat.
+            // Setelah terhapus, ObatDao otomatis menyusun ulang (renumber) ID Obat
+            // sisanya agar tetap berurutan, contoh: OB-0002 menjadi OB-0001.
+            if (obatDao.hapusObat(dipilih.getIdObat())) {
+                JOptionPane.showMessageDialog(this, "Data obat berhasil dihapus! ID Obat telah disusun ulang.");
                 tampilkanDataTabel();
                 bersihkanForm();
             }
@@ -432,24 +493,20 @@ public class FormObat extends javax.swing.JFrame {
 
     private void tblObatMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblObatMouseClicked
         int baris = tblObat.getSelectedRow();
-        if (baris != -1) {
-            // Isi field ID Obat (read-only, dari tabel)
-            txtIdObat.setText(tblObat.getValueAt(baris, 1).toString());
+        if (baris != -1 && currentList != null && baris < currentList.size()) {
+            Obat o = currentList.get(baris);
+            // ID Obat (read-only, otomatis)
+            txtIdObat.setText(o.getKodeObat());
             // Nama Obat
-            txtNamaObat.setText(tblObat.getValueAt(baris, 2).toString());
-            // Satuan — pilih item sesuai nilai di tabel
-            String satuan = tblObat.getValueAt(baris, 3).toString();
-            cmbSatuan.setSelectedItem(satuan);
+            txtNamaObat.setText(o.getNamaObat());
+            // Satuan
+            cmbSatuan.setSelectedItem(o.getSatuan());
             // Stok
-            txtStok.setText(tblObat.getValueAt(baris, 4).toString());
+            txtStok.setText(String.valueOf(o.getStok()));
             // Harga Jual
-            txtHaraJual.setText(tblObat.getValueAt(baris, 5).toString());
+            txtHaraJual.setText(o.getHargaJual() != null ? o.getHargaJual().toPlainString() : "0");
         }
     }//GEN-LAST:event_tblObatMouseClicked
-
-    private void cmbSatuanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbSatuanActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_cmbSatuanActionPerformed
 
     /**
      * @param args the command line arguments
@@ -481,6 +538,7 @@ public class FormObat extends javax.swing.JFrame {
     private javax.swing.JButton btnCari;
     private javax.swing.JButton btnHapus;
     private javax.swing.JButton btnTambah;
+    private javax.swing.JButton btnUbah;
     private javax.swing.JComboBox<String> cmbSatuan;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
