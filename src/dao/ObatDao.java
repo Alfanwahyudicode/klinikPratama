@@ -24,11 +24,9 @@ public class ObatDao {
     // Ambil semua data obat
     public List<Obat> getAllObat() {
         List<Obat> list = new ArrayList<>();
-        String sql = "SELECT * FROM obat ORDER BY id_obat ASC";
+        String sql = "SELECT * FROM obat ORDER BY id_id_obat ASC"; // Sesuai query asalmu atau "id_obat"
 
-        try (Connection conn = Koneksi.getKoneksi();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 list.add(mapRow(rs));
@@ -39,16 +37,14 @@ public class ObatDao {
         return list;
     }
 
-    // Cari obat berdasarkan nama / kode
+    // Cari obat berdasarkan nama
     public List<Obat> cariObat(String keyword) {
         List<Obat> list = new ArrayList<>();
-        String sql = "SELECT * FROM obat WHERE nama_obat LIKE ? OR kode_obat LIKE ? ORDER BY id_obat ASC";
+        String sql = "SELECT * FROM obat WHERE nama_obat LIKE ? ORDER BY id_obat ASC";
 
-        try (Connection conn = Koneksi.getKoneksi();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, "%" + keyword + "%");
-            ps.setString(2, "%" + keyword + "%");
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
@@ -61,39 +57,16 @@ public class ObatDao {
         return list;
     }
 
-    // Ambil daftar obat dengan stok menipis (stok < BATAS_STOK_MENIPIS)
-    public List<Obat> getObatStokMenipis() {
-        List<Obat> list = new ArrayList<>();
-        String sql = "SELECT * FROM obat WHERE stok < ? ORDER BY stok ASC";
-
-        try (Connection conn = Koneksi.getKoneksi();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, Obat.BATAS_STOK_MENIPIS);
-
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapRow(rs));
-                }
-            }
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Gagal mengambil data stok menipis: " + e.getMessage());
-        }
-        return list;
-    }
-
-    // Tambah obat baru
+    // Tambah obat baru (Sesuai 100% dengan kolom databasemu)
     public boolean tambahObat(Obat o) {
-        String sql = "INSERT INTO obat (kode_obat, nama_obat, jenis, satuan, stok, harga_beli, harga_jual, keterangan) "
-                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO obat (nama_obat, satuan, stok, harga_jual) VALUES (?, ?, ?, ?)";
 
-        try (Connection conn = Koneksi.getKoneksi();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(2, o.getNamaObat());
-            ps.setString(4, o.getSatuan());
-            ps.setInt(5, o.getStok());
-            ps.setBigDecimal(7, o.getHargaJual());
+            ps.setString(1, o.getNamaObat());
+            ps.setString(2, o.getSatuan());
+            ps.setInt(3, o.getStok());
+            ps.setBigDecimal(4, o.getHargaJual());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -102,19 +75,17 @@ public class ObatDao {
         }
     }
 
-    // Update data obat
+    // Update data obat lengkap berdasarkan ID Obat
     public boolean updateObat(Obat o) {
-        String sql = "UPDATE obat SET kode_obat=?, nama_obat=?, jenis=?, satuan=?, stok=?, harga_beli=?, harga_jual=?, keterangan=? "
-                   + "WHERE id_obat=?";
+        String sql = "UPDATE obat SET nama_obat=?, satuan=?, stok=?, harga_jual=? WHERE id_obat=?";
 
-        try (Connection conn = Koneksi.getKoneksi();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(2, o.getNamaObat());
-            ps.setString(4, o.getSatuan());
-            ps.setInt(5, o.getStok());
-            ps.setBigDecimal(7, o.getHargaJual());
-            ps.setInt(9, o.getIdObat());
+            ps.setString(1, o.getNamaObat());
+            ps.setString(2, o.getSatuan());
+            ps.setInt(3, o.getStok());
+            ps.setBigDecimal(4, o.getHargaJual());
+            ps.setInt(5, o.getIdObat());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -127,8 +98,7 @@ public class ObatDao {
     public boolean updateStok(int idObat, int stokBaru) {
         String sql = "UPDATE obat SET stok=? WHERE id_obat=?";
 
-        try (Connection conn = Koneksi.getKoneksi();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, stokBaru);
             ps.setInt(2, idObat);
@@ -144,8 +114,7 @@ public class ObatDao {
     public boolean hapusObat(int idObat) {
         String sql = "DELETE FROM obat WHERE id_obat=?";
 
-        try (Connection conn = Koneksi.getKoneksi();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, idObat);
             return ps.executeUpdate() > 0;
@@ -155,7 +124,7 @@ public class ObatDao {
         }
     }
 
-    // Helper: mapping ResultSet -> Obat
+    // Helper: mapping ResultSet -> Obat (Sesuai database asli kamu)
     private Obat mapRow(ResultSet rs) throws SQLException {
         Obat o = new Obat();
         o.setIdObat(rs.getInt("id_obat"));

@@ -38,7 +38,7 @@ public class DokterDao {
     // 2. TAMPILKAN SEMUA DATA DOKTER (READ)
     public List<Dokter> getAllDokter() {
         List<Dokter> list = new ArrayList<>();
-        String sql = "SELECT * FROM dokter ORDER BY id_dokter DESC";
+        String sql = "SELECT * FROM dokter ORDER BY id_dokter ASC";
 
         try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 
