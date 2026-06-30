@@ -34,7 +34,7 @@ public class FormPemeriksaan extends javax.swing.JFrame {
 
     private void setupTabel() {
         DefaultTableModel model = new DefaultTableModel(
-                new Object[]{"No", "No RM", "Pasien", "Dokter", "Diagnosa", "Biaya"}, 0) {
+                new Object[]{"No","Pasien", "Dokter", "Diagnosa","Catatan","Biaya"}, 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
                 return false;
@@ -86,10 +86,10 @@ public class FormPemeriksaan extends javax.swing.JFrame {
         for (Object[] r : list) {
             model.addRow(new Object[]{
                 no++,
-                r[1],
                 r[2],
                 r[3],
                 r[4],
+                r[5],
                 r[6]
             });
         }
@@ -235,7 +235,7 @@ public class FormPemeriksaan extends javax.swing.JFrame {
                 {null, null, null, null, null, null}
             },
             new String [] {
-                "No", "No RM", "Pasien", "Dokter", "Diagnosa", "Biaya Tindakan"
+                "No", "Pasien", "Dokter", "Diagnosa", "Catatan", "Biaya Tindakan"
             }
         ));
         tblPemeriksaan.setGridColor(new java.awt.Color(0, 0, 0));
