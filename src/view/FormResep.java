@@ -12,10 +12,11 @@ import model.Obat;
 import model.Pemeriksaan;
 import model.Resep;
 import model.ResepDetail;
- 
+
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
@@ -32,40 +33,46 @@ public class FormResep extends javax.swing.JFrame {
     private final ResepDetailDao detailDao      = new ResepDetailDao();
     private final ObatDao        obatDao        = new ObatDao();
     private final PemeriksaanDao pemeriksaanDao = new PemeriksaanDao();
- 
+
     private List<Pemeriksaan> listPemeriksaan;
     private List<Obat> listObat;
+
     private Resep resepAktif = null;
-    private ResepDetail detailTerpilih = null;
-    private List<ResepDetail> listDetail;
+    private List<ResepDetail> listDetail = new ArrayList<>();
+    private List<Resep> listResepMaster = new ArrayList<>();
     /**
      * Creates new form FormResep
      */
     public FormResep() {
-        initComponents();
+         initComponents();
         setupTabel();
         loadComboPemeriksaan();
         loadComboObat();
+        loadMasterTable();
         txtTglResep.setText(LocalDate.now().toString());
         txtIdResep.setEditable(false);
+        txtIdResep.setText("R-");
         txtSubtotal.setEditable(false);
+        txtSubtotal.setText("Rp 0");
+        txtCatatanPemerisaan.setEditable(false);
+        txtCatatanPemerisaan.setText("");
         
-        txtJumlah.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-    public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
-    public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
-    public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungSubtotal(); }
-});
+         txtJumlah.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungSubtotal(); }
+        });
 
-// Listener otomatis hitung subtotal saat txtHargaSatuan diketik
-txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-    public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
-    public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
-    public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungSubtotal(); }
-});
+        txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungSubtotal(); }
+        });
     }
+    
     private void setupTabel() {
         DefaultTableModel model = new DefaultTableModel(
-                new Object[]{"No", "ID Resep", "ID Obat", "Jumlah", "Aturan Pakai", "Harga", "Subtotal"}, 0) {
+                new Object[]{"ID Resep", "ID Pemeriksaan", "Tanggal Resep", "SubTotal"}, 0) {
             @Override
             public boolean isCellEditable(int row, int col) {
                 return false;
@@ -73,7 +80,7 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
         };
         jTable1.setModel(model);
         jTable1.getTableHeader().setReorderingAllowed(false);
- 
+
         jTable1.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
@@ -85,7 +92,7 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
         private void loadComboObat() {
         listObat = obatDao.getAllObat();
         cmbIdObat.removeAllItems();
- 
+
         if (listObat.isEmpty()) {
             cmbIdObat.addItem("Tidak ada data obat");
         } else {
@@ -94,6 +101,15 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
             }
         }
         isiHargaDariObatTerpilih();
+    }
+        private void isiHargaDariObatTerpilih() {
+        int idx = cmbIdObat.getSelectedIndex();
+        if (listObat != null && idx >= 0 && idx < listObat.size()) {
+            Obat o = listObat.get(idx);
+            BigDecimal harga = o.getHargaJual();
+            txtHargaSatuan.setText(harga != null ? formatRupiah(harga) : "Rp 0");
+            hitungSubtotal();
+        }
     }
         
     private void loadComboPemeriksaan() {
@@ -109,61 +125,40 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
         }
     }
     
-    private void isiHargaDariObatTerpilih() {
-    int idx = cmbIdObat.getSelectedIndex();
-    if (listObat != null && idx >= 0 && idx < listObat.size()) {
-        Obat o = listObat.get(idx);
-        BigDecimal harga = o.getHargaJual();
-        txtHargaSatuan.setText(harga != null ? formatRupiah(harga) : "Rp 0");
-        hitungSubtotal();
-    }
-}
- 
-    private void hitungSubtotal() {
-    try {
-        int jumlah = Integer.parseInt(txtJumlah.getText().trim());
+    private void loadMasterTable() {
+        listResepMaster = resepDao.getAllResep();
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0);
 
-        // Bersihkan format rupiah dulu sebelum diparse
-        String hargaBersih = txtHargaSatuan.getText()
-            .replace("Rp", "").replace(".", "").replace(",", ".").trim();
-        BigDecimal harga = new BigDecimal(hargaBersih);
-        BigDecimal sub   = harga.multiply(BigDecimal.valueOf(jumlah));
-
-        txtSubtotal.setText(formatRupiah(sub));
-    } catch (NumberFormatException e) {
-        txtSubtotal.setText("Rp 0");
+        for (Resep r : listResepMaster) {
+            BigDecimal total = detailDao.getTotalByResepId(r.getIdResep());
+            model.addRow(new Object[]{
+                formatIdResep(r.getIdResep()),
+                r.getIdPemeriksaan(),
+                r.getTglResep() != null ? r.getTglResep().toString() : "",
+                formatRupiah(total)
+            });
+        }
     }
-}
+    
+    private String formatIdResep(int idResep) {
+        return "R-" + String.format("%03d", idResep);
+    }
+
+    private int parseIdResep(String formatted) {
+        if (formatted == null) return -1;
+        String angkaSaja = formatted.replaceAll("[^0-9]", "");
+        if (angkaSaja.isEmpty()) return -1;
+        return Integer.parseInt(angkaSaja);
+    }
+
     private String formatRupiah(BigDecimal angka) {
-    if (angka == null) return "Rp 0";
-    java.text.NumberFormat format = java.text.NumberFormat.getCurrencyInstance(
-        new java.util.Locale("id", "ID"));
-    return format.format(angka);
-}
-
-    
-    private void loadTabelDetail() {
-    if (resepAktif == null) return;
-
-    listDetail = detailDao.getByResepId(resepAktif.getIdResep());
-    DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-    model.setRowCount(0);
-
-    int no = 1;
-    for (ResepDetail rd : listDetail) {
-        String namaObat = cariNamaObat(rd.getIdObat());
-        model.addRow(new Object[]{
-            no++,
-            rd.getIdResep(),
-            namaObat,
-            rd.getJumlah(),
-            rd.getAturanPakai(),
-            formatRupiah(rd.getHargaSatuan()),   // ← format rupiah
-            formatRupiah(rd.getSubtotal())        // ← format rupiah
-        });
+        if (angka == null) return "Rp 0";
+        java.text.NumberFormat format = java.text.NumberFormat.getCurrencyInstance(
+            new java.util.Locale("id", "ID"));
+        return format.format(angka);
     }
-}
-    
+
     private String cariNamaObat(int idObat) {
         if (listObat == null) return String.valueOf(idObat);
         for (Obat o : listObat) {
@@ -171,39 +166,70 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
         }
         return String.valueOf(idObat);
     }
- 
-    private void tabelMouseClicked(java.awt.event.MouseEvent evt) {
-    int row = jTable1.getSelectedRow();
-    if (row >= 0 && listDetail != null && row < listDetail.size()) {
-        detailTerpilih = listDetail.get(row);
 
-        if (listObat != null) {
-            for (int i = 0; i < listObat.size(); i++) {
-                if (listObat.get(i).getIdObat() == detailTerpilih.getIdObat()) {
-                    cmbIdObat.setSelectedIndex(i);
-                    break;
-                }
-            }
+    private Obat cariObatById(int idObat) {
+        if (listObat == null) return null;
+        for (Obat o : listObat) {
+            if (o.getIdObat() == idObat) return o;
         }
-
-        txtJumlah.setText(String.valueOf(detailTerpilih.getJumlah()));
-        txtAturanPakai.setText(detailTerpilih.getAturanPakai());
-        txtHargaSatuan.setText(detailTerpilih.getHargaSatuan() != null
-                ? formatRupiah(detailTerpilih.getHargaSatuan()) : "Rp 0");
-        txtSubtotal.setText(detailTerpilih.getSubtotal() != null
-                ? formatRupiah(detailTerpilih.getSubtotal()) : "Rp 0");
+        return null;
     }
-}
-    
+
+    private Obat getObatTerpilih() {
+        int idx = cmbIdObat.getSelectedIndex();
+        if (listObat != null && idx >= 0 && idx < listObat.size()) {
+            return listObat.get(idx);
+        }
+        return null;
+    }
+
+    private Pemeriksaan getPemeriksaanTerpilih() {
+        int idx = jComboBox1.getSelectedIndex();
+        if (listPemeriksaan != null && idx >= 0 && idx < listPemeriksaan.size()) {
+            return listPemeriksaan.get(idx);
+        }
+        return null;
+    }
+ 
+    private void hitungSubtotal() {
+        try {
+            int jumlah = Integer.parseInt(txtJumlah.getText().trim());
+            String hargaBersih = txtHargaSatuan.getText()
+                .replace("Rp", "").replace(".", "").replace(",", ".").trim();
+            BigDecimal harga = new BigDecimal(hargaBersih);
+            BigDecimal sub   = harga.multiply(BigDecimal.valueOf(jumlah));
+            txtSubtotal.setText(formatRupiah(sub));
+        } catch (NumberFormatException e) {
+            txtSubtotal.setText("Rp 0");
+        }
+    }
+    private void refreshTotalResep() {
+        if (resepAktif == null) {
+            txtSubtotal.setText("Rp 0");
+            return;
+        }
+        listDetail = detailDao.getByResepId(resepAktif.getIdResep());
+        BigDecimal total = detailDao.getTotalByResepId(resepAktif.getIdResep());
+        txtSubtotal.setText(formatRupiah(total));
+    }
+
     private void bersihkanForm() {
         txtJumlah.setText("");
         txtAturanPakai.setText("");
-        txtHargaSatuan.setText("");
-        txtSubtotal.setText("0");
-        jTable1.clearSelection();
-        detailTerpilih = null;
         if (listObat != null && !listObat.isEmpty()) cmbIdObat.setSelectedIndex(0);
         isiHargaDariObatTerpilih();
+    }
+
+    private void resetFormPenuh() {
+        resepAktif = null;
+        listDetail = new ArrayList<>();
+        txtIdResep.setText("(otomatis)");
+        txtTglResep.setText(LocalDate.now().toString());
+        txtCatatanPemerisaan.setText("");
+        if (jComboBox1.getItemCount() > 0) jComboBox1.setSelectedIndex(0);
+        bersihkanForm();
+        txtSubtotal.setText("Rp 0");
+        jTable1.clearSelection();
     }
     
     private boolean validasiDetail() {
@@ -234,22 +260,6 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
         return true;
     }
     
-    private Obat getObatTerpilih() {
-        int idx = cmbIdObat.getSelectedIndex();
-        if (listObat != null && idx >= 0 && idx < listObat.size()) {
-            return listObat.get(idx);
-        }
-        return null;
-    }
-    
-    private Pemeriksaan getPemeriksaanTerpilih() {
-        int idx = jComboBox1.getSelectedIndex();
-        if (listPemeriksaan != null && idx >= 0 && idx < listPemeriksaan.size()) {
-            return listPemeriksaan.get(idx);
-        }
-        return null;
-    }
- 
     private void simpanResepHeader() {
         Pemeriksaan pe = getPemeriksaanTerpilih();
         if (pe == null) {
@@ -257,7 +267,7 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
                 "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
- 
+
         String tglStr = txtTglResep.getText().trim();
         Date tglResep;
         try {
@@ -267,76 +277,270 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
                 "Format tanggal salah! Gunakan: yyyy-MM-dd", "Validasi", JOptionPane.WARNING_MESSAGE);
             return;
         }
- 
-        Resep r = new Resep(pe.getIdPemeriksaan(), tglResep);
-        int idBaru = resepDao.tambahResep(r);
- 
-        if (idBaru > 0) {
-            resepAktif = r;
-            txtIdResep.setText(String.valueOf(idBaru));
+
+        if (resepAktif == null) {
+            // ===== INSERT RESEP BARU =====
+            Resep r = new Resep(pe.getIdPemeriksaan(), tglResep);
+            int idBaru = resepDao.tambahResep(r);
+
+            if (idBaru > 0) {
+                resepAktif = r;
+                listDetail = new ArrayList<>();
+                txtIdResep.setText(formatIdResep(idBaru));
+                txtCatatanPemerisaan.setText(pe.getCatatan() != null ? pe.getCatatan() : "");
+                loadMasterTable();
+                JOptionPane.showMessageDialog(this,
+                    "Resep baru berhasil disimpan! ID Resep: " + formatIdResep(idBaru)
+                    + "\nSekarang tambahkan obat pada bagian Detail Resep Obat.",
+                    "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } else {
+            // ===== UPDATE RESEP YANG SUDAH ADA =====
+            resepAktif.setIdPemeriksaan(pe.getIdPemeriksaan());
+            resepAktif.setTglResep(tglResep);
+
+            if (resepDao.updateResep(resepAktif)) {
+                txtCatatanPemerisaan.setText(pe.getCatatan() != null ? pe.getCatatan() : "");
+                loadMasterTable();
+                JOptionPane.showMessageDialog(this,
+                    "Resep " + formatIdResep(resepAktif.getIdResep()) + " berhasil diperbarui!",
+                    "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
+    }
+    private void tambahObatKeResep() {
+        if (resepAktif == null) {
             JOptionPane.showMessageDialog(this,
-                "Resep berhasil disimpan! ID Resep: " + idBaru + "\nSekarang tambahkan obat.",
+                "Simpan Resep (Header) terlebih dahulu sebelum menambah obat!",
+                "Peringatan", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (!validasiDetail()) return;
+
+        Obat obatDipilih = getObatTerpilih();
+        if (obatDipilih == null) {
+            JOptionPane.showMessageDialog(this, "Pilih obat terlebih dahulu!",
+                "Peringatan", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int jumlah = Integer.parseInt(txtJumlah.getText().trim());
+        if (jumlah > obatDipilih.getStok()) {
+            JOptionPane.showMessageDialog(this,
+                "Stok obat tidak cukup! Stok tersedia: " + obatDipilih.getStok(),
+                "Peringatan", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        BigDecimal harga;
+        try {
+            String hargaBersih = txtHargaSatuan.getText()
+                .replace("Rp", "").replace(".", "").replace(",", ".").trim();
+            harga = new BigDecimal(hargaBersih);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Format Harga Satuan tidak valid!",
+                "Validasi", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        BigDecimal subtotalBaris = harga.multiply(BigDecimal.valueOf(jumlah));
+
+        ResepDetail rd = new ResepDetail(
+            resepAktif.getIdResep(),
+            obatDipilih.getIdObat(),
+            jumlah,
+            txtAturanPakai.getText().trim(),
+            harga,
+            subtotalBaris
+        );
+
+        int idDetail = detailDao.tambahDetail(rd);
+        if (idDetail > 0) {
+            obatDao.updateStok(obatDipilih.getIdObat(), obatDipilih.getStok() - jumlah);
+            loadComboObat();
+            bersihkanForm();
+            refreshTotalResep();
+            loadMasterTable();
+            JOptionPane.showMessageDialog(this,
+                "Obat berhasil ditambahkan ke resep " + formatIdResep(resepAktif.getIdResep())
+                + ".\nJumlah jenis obat pada resep ini sekarang: " + listDetail.size(),
                 "Sukses", JOptionPane.INFORMATION_MESSAGE);
         }
     }
+
+    private void hapusObatDariResep() {
+        if (resepAktif == null) {
+            JOptionPane.showMessageDialog(this, "Pilih / simpan resep terlebih dahulu!",
+                "Peringatan", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        listDetail = detailDao.getByResepId(resepAktif.getIdResep());
+        if (listDetail == null || listDetail.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Belum ada obat pada resep ini.",
+                "Info", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        String[] opsi = new String[listDetail.size()];
+        for (int i = 0; i < listDetail.size(); i++) {
+            ResepDetail rd = listDetail.get(i);
+            opsi[i] = cariNamaObat(rd.getIdObat())
+                    + "  |  Jumlah: " + rd.getJumlah()
+                    + "  |  Aturan: " + rd.getAturanPakai()
+                    + "  |  Subtotal: " + formatRupiah(rd.getSubtotal());
+        }
+
+        String pilihan = (String) JOptionPane.showInputDialog(this,
+            "Pilih obat yang ingin dihapus dari resep ini:",
+            "Hapus Obat", JOptionPane.QUESTION_MESSAGE, null, opsi, opsi[0]);
+
+        if (pilihan == null) return;
+
+        int idx = -1;
+        for (int i = 0; i < opsi.length; i++) {
+            if (opsi[i].equals(pilihan)) { idx = i; break; }
+        }
+        if (idx < 0) return;
+
+        ResepDetail target = listDetail.get(idx);
+
+        int konfirmasi = JOptionPane.showConfirmDialog(this,
+            "Yakin hapus obat \"" + cariNamaObat(target.getIdObat()) + "\" dari resep ini?",
+            "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
+
+        if (konfirmasi == JOptionPane.YES_OPTION) {
+            Obat o = cariObatById(target.getIdObat());
+            if (o != null) {
+                obatDao.updateStok(o.getIdObat(), o.getStok() + target.getJumlah());
+            }
+
+            if (detailDao.hapusDetail(target.getIdResepDetail())) {
+                loadComboObat();
+                refreshTotalResep();
+                loadMasterTable();
+                JOptionPane.showMessageDialog(this, "Obat berhasil dihapus dari resep!\n"
+                    + "Anda bisa menambahkan obat pengganti melalui tombol Tambah Obat.",
+                    "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
+    }
     
-    private void cariData() {
-    String keyword = txtCari.getText().trim();
+    private void hapusResepHeader() {
+        if (resepAktif == null) {
+            JOptionPane.showMessageDialog(this, "Pilih resep yang ingin dihapus terlebih dahulu!",
+                "Peringatan", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
 
-    if (resepAktif == null) {
-        javax.swing.JOptionPane.showMessageDialog(this,
-            "Pilih ID Pemeriksaan terlebih dahulu!", "Peringatan",
-            javax.swing.JOptionPane.WARNING_MESSAGE);
-        return;
+        int konfirmasi = JOptionPane.showConfirmDialog(this,
+            "Yakin hapus resep " + formatIdResep(resepAktif.getIdResep())
+            + " beserta seluruh obat di dalamnya?\nStok obat yang sudah dipakai akan dikembalikan.",
+            "Konfirmasi Hapus Resep", JOptionPane.YES_NO_OPTION);
+
+        if (konfirmasi == JOptionPane.YES_OPTION) {
+            List<ResepDetail> details = detailDao.getByResepId(resepAktif.getIdResep());
+            for (ResepDetail rd : details) {
+                Obat o = cariObatById(rd.getIdObat());
+                if (o != null) {
+                    obatDao.updateStok(o.getIdObat(), o.getStok() + rd.getJumlah());
+                }
+            }
+
+            if (resepDao.hapusResep(resepAktif.getIdResep())) {
+                loadComboObat();
+                loadMasterTable();
+                resetFormPenuh();
+                JOptionPane.showMessageDialog(this, "Resep berhasil dihapus.",
+                    "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
     }
 
-    if (keyword.isEmpty()) {
-        loadTabelDetail();
-        return;
-    }
+    
+    private void loadTabelDetail() {
+    if (resepAktif == null) return;
 
-    javax.swing.table.DefaultTableModel model =
-        (javax.swing.table.DefaultTableModel) jTable1.getModel();
+    listDetail = detailDao.getByResepId(resepAktif.getIdResep());
+    DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
     model.setRowCount(0);
 
     int no = 1;
     for (ResepDetail rd : listDetail) {
         String namaObat = cariNamaObat(rd.getIdObat());
-
-        boolean cocok =
-            String.valueOf(rd.getIdResep()).contains(keyword) ||
-            String.valueOf(rd.getIdObat()).contains(keyword)  ||
-            namaObat.toLowerCase().contains(keyword.toLowerCase()) ||
-            (rd.getAturanPakai() != null &&
-             rd.getAturanPakai().toLowerCase().contains(keyword.toLowerCase()));
-
-        if (cocok) {
-            model.addRow(new Object[]{
-                no++,
-                rd.getIdResep(),
-                namaObat,
-                rd.getJumlah(),
-                rd.getAturanPakai(),
-                rd.getHargaSatuan(),
-                rd.getSubtotal()
-            });
-        }
-    }
-
-    if (model.getRowCount() == 0) {
-        javax.swing.JOptionPane.showMessageDialog(this,
-            "Data tidak ditemukan!", "Info",
-            javax.swing.JOptionPane.INFORMATION_MESSAGE);
-        loadTabelDetail();
-    }
-
-    if (model.getRowCount() == 0) {
-        javax.swing.JOptionPane.showMessageDialog(this,
-            "Data tidak ditemukan!", "Info",
-            javax.swing.JOptionPane.INFORMATION_MESSAGE);
-        loadTabelDetail();
+        model.addRow(new Object[]{
+            no++,
+            rd.getIdResep(),
+            namaObat,
+            rd.getJumlah(),
+            rd.getAturanPakai(),
+            formatRupiah(rd.getHargaSatuan()),   // ← format rupiah
+            formatRupiah(rd.getSubtotal())        // ← format rupiah
+        });
     }
 }
+    
+ 
+    private void tabelMouseClicked(java.awt.event.MouseEvent evt) {
+        int row = jTable1.getSelectedRow();
+        if (row < 0 || listResepMaster == null || row >= listResepMaster.size()) return;
+
+        Resep r = listResepMaster.get(row);
+        resepAktif = r;
+        txtIdResep.setText(formatIdResep(r.getIdResep()));
+        txtTglResep.setText(r.getTglResep() != null ? r.getTglResep().toString() : LocalDate.now().toString());
+
+        if (listPemeriksaan != null) {
+            for (int i = 0; i < listPemeriksaan.size(); i++) {
+                if (listPemeriksaan.get(i).getIdPemeriksaan() == r.getIdPemeriksaan()) {
+                    jComboBox1.setSelectedIndex(i);
+                    String catatan = listPemeriksaan.get(i).getCatatan();
+                    txtCatatanPemerisaan.setText(catatan != null ? catatan : "");
+                    break;
+                }
+            }
+        }
+
+        bersihkanForm();
+        refreshTotalResep();   
+    }
+    private void cariData() {
+        String keyword = txtCari.getText().trim();
+
+        if (keyword.isEmpty() || keyword.equalsIgnoreCase("Cari Resep.....")) {
+            loadMasterTable();
+            return;
+        }
+
+        if (listResepMaster == null) {
+            loadMasterTable();
+        }
+
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0);
+
+        boolean ada = false;
+        for (Resep r : listResepMaster) {
+            String idFormatted = formatIdResep(r.getIdResep());
+            String tglStr = r.getTglResep() != null ? r.getTglResep().toString() : "";
+
+            boolean cocok =
+                idFormatted.toLowerCase().contains(keyword.toLowerCase()) ||
+                String.valueOf(r.getIdPemeriksaan()).contains(keyword) ||
+                tglStr.contains(keyword);
+
+            if (cocok) {
+                BigDecimal total = detailDao.getTotalByResepId(r.getIdResep());
+                model.addRow(new Object[]{idFormatted, r.getIdPemeriksaan(), tglStr, formatRupiah(total)});
+                ada = true;
+            }
+        }
+
+        if (!ada) {
+            JOptionPane.showMessageDialog(this, "Data tidak ditemukan!", "Info",
+                JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -466,7 +670,6 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
             }
         });
 
-        txtCari.setText("Cari Resep.....");
         txtCari.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtCariActionPerformed(evt);
@@ -638,7 +841,7 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
                             .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                 .addComponent(btnSimpan)
                                 .addComponent(btnHapus)))))
-                .addContainerGap(329, Short.MAX_VALUE))
+                .addContainerGap(353, Short.MAX_VALUE))
         );
 
         pack();
@@ -650,7 +853,7 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
 
     private void txtSubtotalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtSubtotalActionPerformed
         // TODO add your handling code here:
-        hitungSubtotal();
+        
     }//GEN-LAST:event_txtSubtotalActionPerformed
 
     private void txtJumlahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtJumlahActionPerformed
@@ -659,128 +862,57 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
 
     private void txtTglResepActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTglResepActionPerformed
         // TODO add your handling code here:
+        hitungSubtotal();
     }//GEN-LAST:event_txtTglResepActionPerformed
 
     private void btnSimpanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSimpanActionPerformed
         // TODO add your handling code here:
-        if (resepAktif == null) {
-            simpanResepHeader();
-            if (resepAktif == null) return;
-        }
- 
-        if (!validasiDetail()) return;
- 
-        Obat obatDipilih = getObatTerpilih();
-        if (obatDipilih == null) {
-            JOptionPane.showMessageDialog(this, "Pilih obat terlebih dahulu!",
-                "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
- 
-        int jumlah = Integer.parseInt(txtJumlah.getText().trim());
-        if (jumlah > obatDipilih.getStok()) {
-            JOptionPane.showMessageDialog(this,
-                "Stok obat tidak cukup! Stok tersedia: " + obatDipilih.getStok(),
-                "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
- 
-        String hargaBersih = txtHargaSatuan.getText()
-            .replace("Rp", "").replace(".", "").replace(",", ".").trim();
-        BigDecimal harga = new BigDecimal(hargaBersih);        BigDecimal subtotal = harga.multiply(BigDecimal.valueOf(jumlah));
- 
-        ResepDetail rd = new ResepDetail(
-            resepAktif.getIdResep(),
-            obatDipilih.getIdObat(),
-            jumlah,
-            txtAturanPakai.getText().trim(),
-            harga,
-            subtotal
-        );
- 
-        int idDetail = detailDao.tambahDetail(rd);
-        if (idDetail > 0) {
-            obatDao.updateStok(obatDipilih.getIdObat(), obatDipilih.getStok() - jumlah);
-            loadComboObat();
-            loadTabelDetail();
-            bersihkanForm();
-            JOptionPane.showMessageDialog(this, "Obat berhasil ditambahkan ke resep!",
-                "Sukses", JOptionPane.INFORMATION_MESSAGE);
-        }
+        simpanResepHeader();
     }//GEN-LAST:event_btnSimpanActionPerformed
 
     private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
         // TODO add your handling code here:
         Pemeriksaan pe = getPemeriksaanTerpilih();
         if (pe == null) return;
- 
+
+        txtCatatanPemerisaan.setText(pe.getCatatan() != null ? pe.getCatatan() : "");
+
         Resep existing = resepDao.getByIdPemeriksaan(pe.getIdPemeriksaan());
         if (existing != null) {
             resepAktif = existing;
-            txtIdResep.setText(String.valueOf(existing.getIdResep()));
+            txtIdResep.setText(formatIdResep(existing.getIdResep()));
             txtTglResep.setText(existing.getTglResep() != null
                 ? existing.getTglResep().toString() : LocalDate.now().toString());
-            loadTabelDetail();
-            JOptionPane.showMessageDialog(this,
-                "Pemeriksaan ini sudah memiliki resep (ID: " + existing.getIdResep() + ").\nDetail obat ditampilkan di tabel.",
-                "Info", JOptionPane.INFORMATION_MESSAGE);
+            bersihkanForm();
+            refreshTotalResep();
         } else {
             resepAktif = null;
-            txtIdResep.setText("");
-            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-            model.setRowCount(0);
+            listDetail = new ArrayList<>();
+            txtIdResep.setText("(otomatis)");
+            txtTglResep.setText(LocalDate.now().toString());
+            bersihkanForm();
+            txtSubtotal.setText("Rp 0");
         }
     }//GEN-LAST:event_jComboBox1ActionPerformed
 
     private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
         // TODO add your handling code here:
-        if (detailTerpilih == null) {
-            JOptionPane.showMessageDialog(this, "Pilih baris pada tabel terlebih dahulu!",
-                "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
- 
-        int konfirmasi = JOptionPane.showConfirmDialog(this,
-            "Yakin hapus data obat ini dari resep?", "Konfirmasi Hapus",
-            JOptionPane.YES_NO_OPTION);
- 
-        if (konfirmasi == JOptionPane.YES_OPTION) {
-            Obat o = cariObatById(detailTerpilih.getIdObat());
-            if (o != null) {
-                obatDao.updateStok(o.getIdObat(), o.getStok() + detailTerpilih.getJumlah());
-            }
- 
-            if (detailDao.hapusDetail(detailTerpilih.getIdResepDetail())) {
-                loadComboObat();
-                loadTabelDetail();
-                bersihkanForm();
-                JOptionPane.showMessageDialog(this, "Data berhasil dihapus!",
-                    "Sukses", JOptionPane.INFORMATION_MESSAGE);
-            }
-        }
+        hapusResepHeader();
     }//GEN-LAST:event_btnHapusActionPerformed
 
     private void btnBatalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBatalActionPerformed
         // TODO add your handling code here:
-        bersihkanForm();
-        resepAktif = null;
-        detailTerpilih = null;
-        txtIdResep.setText("");
-        txtTglResep.setText(LocalDate.now().toString());
-        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-        model.setRowCount(0);
+        resetFormPenuh();
+        loadMasterTable();
         JOptionPane.showMessageDialog(this, "Form berhasil direset.",
             "Info", JOptionPane.INFORMATION_MESSAGE);
     }//GEN-LAST:event_btnBatalActionPerformed
 
     private void btnCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCariActionPerformed
         // TODO add your handling code here:
-        txtCari.setText("");
-    if (resepAktif != null) {
-        loadTabelDetail();
+        cariData();
     }//GEN-LAST:event_btnCariActionPerformed
 
-}
     private void txtCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtCariActionPerformed
         // TODO add your handling code here:
          cariData();
@@ -793,6 +925,7 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
 
     private void txtHargaSatuanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtHargaSatuanActionPerformed
         // TODO add your handling code here:
+        hitungSubtotal();
     }//GEN-LAST:event_txtHargaSatuanActionPerformed
 
     private void txtCatatanPemerisaanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtCatatanPemerisaanActionPerformed
@@ -801,14 +934,9 @@ txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentL
 
     private void btnHapusObatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusObatActionPerformed
         // TODO add your handling code here:
+        tambahObatKeResep();
     }//GEN-LAST:event_btnHapusObatActionPerformed
-    private Obat cariObatById(int idObat) {
-        if (listObat == null) return null;
-        for (Obat o : listObat) {
-            if (o.getIdObat() == idObat) return o;
-        }
-        return null;
-    }
+
     /**
      * @param args the command line arguments
      */
