@@ -15,7 +15,7 @@ public class Koneksi {
     private static final String URL = "jdbc:mysql://localhost:3306/dbklinik";
     private static final String USER = "root";
     private static final String PASS = "";
-
+  
     public static Connection getKoneksi() {
         Connection conn = null;
         try {

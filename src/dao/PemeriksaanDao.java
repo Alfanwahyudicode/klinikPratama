@@ -14,7 +14,8 @@ public class PemeriksaanDao {
     // 1. Mengambil data kunjungan yang belum diperiksa
     public List<Object[]> getKunjunganBelumPeriksa() {
         List<Object[]> list = new ArrayList<>();
-        String sql = "SELECT k.id_kunjungan, k.no_rm, pa.nama_pasien, d.nama_dokter, k.keluhan "
+        // PERBAIKAN: Mengubah k.no_rm menjadi pa.no_rm jika kolom rekam medis ada di tabel pasien
+        String sql = "SELECT k.id_kunjungan, pa.no_rm, pa.nama_pasien, d.nama_dokter, k.keluhan "
                 + "FROM kunjungan k "
                 + "JOIN pasien pa ON k.id_pasien = pa.id_pasien "
                 + "JOIN dokter d ON k.id_dokter = d.id_dokter "
@@ -158,5 +159,32 @@ public class PemeriksaanDao {
             e.printStackTrace();
         }
         return false;
+    }
+
+    public List<Pemeriksaan> getAllPemeriksaan() {
+        List<Pemeriksaan> list = new ArrayList<>();
+        // Mengambil id, diagnosa, dan fields lain yang dibutuhkan oleh model Pemeriksaan
+        String sql = "SELECT p.id_pemeriksaan, p.id_kunjungan, p.diagnosa, p.tindakan, p.catatan, p.biaya_tindakan "
+                + "FROM pemeriksaan p "
+                + "ORDER BY p.id_pemeriksaan DESC";
+
+        try (Connection conn = koneksi.Koneksi.getKoneksi(); // Pastikan panggil kelas koneksi Anda yang benar
+                 PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                Pemeriksaan pe = new Pemeriksaan();
+                pe.setIdPemeriksaan(rs.getInt("id_pemeriksaan"));
+                pe.setIdKunjungan(rs.getInt("id_kunjungan"));
+                pe.setDiagnosa(rs.getString("diagnosa"));
+                pe.setTindakan(rs.getString("tindakan"));
+                pe.setCatatan(rs.getString("catatan"));
+                pe.setBiayaTindakan(rs.getBigDecimal("biaya_tindakan"));
+
+                list.add(pe); // Memasukkan objek Pemeriksaan ke dalam list
+            }
+        } catch (SQLException e) {
+            System.out.println("Error getAllPemeriksaan: " + e.getMessage());
+        }
+        return list;
     }
 }
