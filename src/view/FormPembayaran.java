@@ -3,40 +3,54 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package view;
-
+ 
 import dao.PembayaranDao;
 import model.Pembayaran;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Random;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.JOptionPane;
-
+ 
 /**
  * @author VanZ
  */
 public class FormPembayaran extends javax.swing.JFrame {
-
+ 
    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FormPembayaran.class.getName());
     private PembayaranDao pembayaranDao = new PembayaranDao();
+ 
+    /** Teks placeholder yang tampil sebelum user memilih metode bayar. */
+    private static final String PILIH_METODE_BAYAR = "-- Pilih Metode Bayar --";
+    private static final Random RNG = new Random();
  
     public FormPembayaran(int idKunjunganEksternal) {
     initComponents();
     kosongkanForm();
     tampilkanData();
     tambahListenerAutoHitung();
-
-    cmbIdKunjungan.setSelectedItem(String.valueOf(idKunjunganEksternal));
-    cariDataKunjungan();
+ 
+    if (idKunjunganEksternal > 0) {
+        muatComboIdKunjungan(idKunjunganEksternal);
+        cmbIdKunjungan.setSelectedItem(String.valueOf(idKunjunganEksternal));
+        cariDataKunjungan();
+    }
 }
-    
-    private void muatComboIdKunjungan() {
+ 
+    /**
+     * Memuat combo box ID Kunjungan hanya dengan kunjungan yang BELUM
+     * memiliki pembayaran (belum bayar). idKunjunganSaatEdit diisi ketika
+     * form sedang membuka data lama untuk diubah, supaya ID kunjungan milik
+     * data tersebut tetap muncul di daftar walaupun sudah dibayar.
+     */
+    private void muatComboIdKunjungan(Integer idKunjunganSaatEdit) {
         cmbIdKunjungan.removeAllItems();
-        List<Integer> list = pembayaranDao.getAllIdKunjungan();
+        List<Integer> list = pembayaranDao.getIdKunjunganBelumBayar(idKunjunganSaatEdit);
         for (Integer id : list) {
             cmbIdKunjungan.addItem(String.valueOf(id));
         }
     }
-
+ 
     private void tambahListenerAutoHitung() {
         txtTotalTindakan.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) { hitungTotalBiaya(); }
@@ -50,7 +64,7 @@ public class FormPembayaran extends javax.swing.JFrame {
             public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungTotalBiaya(); }
         });
  
-        txtTotalBayar.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+        txtTotalPembayaran.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) { hitungKembalian(); }
             public void removeUpdate(javax.swing.event.DocumentEvent e) { hitungKembalian(); }
             public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungKembalian(); }
@@ -61,14 +75,37 @@ public class FormPembayaran extends javax.swing.JFrame {
             public void removeUpdate(javax.swing.event.DocumentEvent e) { hitungKembalian(); }
             public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungKembalian(); }
         });
-        
+ 
     }
-    
+ 
     private void cmbIdKunjunganItemStateChanged(java.awt.event.ItemEvent evt) {
     if (evt.getStateChange() == java.awt.event.ItemEvent.SELECTED) {
         cariDataKunjungan();
     }
 }
+ 
+    /**
+     * Dipanggil setiap kali pilihan Metode Bayar berubah.
+     * - Tunai        : kembalian dihitung OTOMATIS (field non-editable).
+     * - selain Tunai  : kembalian bisa diisi manual (field enabled/editable).
+     */
+    private void cmbMetodeBayarItemStateChanged(java.awt.event.ItemEvent evt) {
+        if (evt.getStateChange() == java.awt.event.ItemEvent.SELECTED) {
+            aturModeKembalian();
+        }
+    }
+ 
+    private void aturModeKembalian() {
+        Object selected = cmbMetodeBayar.getSelectedItem();
+        boolean tunai = selected != null && "Tunai".equals(selected.toString());
+ 
+        if (tunai) {
+            txtKembalian.setEditable(false);
+            hitungKembalian();
+        } else {
+            txtKembalian.setEditable(true);
+        }
+    }
  
     private void hitungTotalBiaya() {
         try {
@@ -83,8 +120,15 @@ public class FormPembayaran extends javax.swing.JFrame {
     }
  
     private void hitungKembalian() {
+        // Kembalian otomatis hanya berlaku untuk metode Tunai.
+        Object selected = cmbMetodeBayar.getSelectedItem();
+        boolean tunai = selected != null && "Tunai".equals(selected.toString());
+        if (!tunai) {
+            return;
+        }
+ 
         try {
-            String totalBayarStr = txtTotalBayar.getText().trim();
+            String totalBayarStr = txtTotalPembayaran.getText().trim();
             String totalBiayaStr = txtTotalBiaya.getText().trim();
  
             BigDecimal totalBayar = totalBayarStr.isEmpty() ? BigDecimal.ZERO : new BigDecimal(totalBayarStr);
@@ -115,9 +159,31 @@ public class FormPembayaran extends javax.swing.JFrame {
     }
     }
  
+    /**
+     * Membuat Kode Pembayaran otomatis dengan format:
+     * [5 digit angka acak][6 digit tanggal bayar yyMMdd]
+     * Contoh: 48213 260701 -> "48213260701" (11 digit).
+     * Dipastikan unik dengan mengecek ke database, jika sudah ada maka
+     * dibuat ulang bagian acaknya.
+     */
     private String buatKodePembayaran() {
-        String timestamp = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss").format(new java.util.Date());
-        return "PAY-" + timestamp;
+        String tglStr = txtTanggalBayar.getText().trim();
+        java.time.LocalDate tanggal;
+        try {
+            tanggal = tglStr.isEmpty() ? java.time.LocalDate.now() : java.time.LocalDate.parse(tglStr);
+        } catch (Exception ex) {
+            tanggal = java.time.LocalDate.now();
+        }
+        String bagianTanggal = tanggal.format(java.time.format.DateTimeFormatter.ofPattern("yyMMdd"));
+ 
+        String kode;
+        do {
+            int acak = RNG.nextInt(100000); // 0 - 99999
+            String bagianAcak = String.format("%05d", acak);
+            kode = bagianAcak + bagianTanggal;
+        } while (pembayaranDao.kodePembayaranSudahAda(kode));
+ 
+        return kode;
     }
  
     public void tampilkanData() {
@@ -132,6 +198,7 @@ public class FormPembayaran extends javax.swing.JFrame {
  
     public void kosongkanForm() {
         txtIdBayar.setText("");
+        muatComboIdKunjungan(null);
         if (cmbIdKunjungan.getItemCount() > 0) {
         cmbIdKunjungan.setSelectedIndex(-1);
     }
@@ -139,14 +206,15 @@ public class FormPembayaran extends javax.swing.JFrame {
         txtTotalTindakan.setText("0");
         txtTotalObat.setText("0");
         txtTotalBiaya.setText("0");
-        txtTotalBayar.setText("");
+        txtTotalPembayaran.setText("");
         txtKembalian.setText("");
+        txtKembalian.setEditable(false);
         txtKodePembayaran.setText("");
         txtCari.setText("");
         txtNamaPasien.setText("");
         cmbMetodeBayar.setSelectedIndex(0);
     }
-
+ 
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -155,7 +223,7 @@ public class FormPembayaran extends javax.swing.JFrame {
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
-
+ 
         jLabel2 = new javax.swing.JLabel();
         jLabel1 = new javax.swing.JLabel();
         jLabel3 = new javax.swing.JLabel();
@@ -181,101 +249,98 @@ public class FormPembayaran extends javax.swing.JFrame {
         jLabel12 = new javax.swing.JLabel();
         txtNamaPasien = new javax.swing.JTextField();
         jLabel9 = new javax.swing.JLabel();
-        txtTotalBayar = new javax.swing.JTextField();
+        txtTotalPembayaran = new javax.swing.JTextField();
         jLabel10 = new javax.swing.JLabel();
         txtKembalian = new javax.swing.JTextField();
         jTextField1 = new javax.swing.JTextField();
         txtKodePembayaran = new javax.swing.JTextField();
         cmbIdKunjungan = new javax.swing.JComboBox<>();
-
+ 
         jLabel2.setText("jLabel2");
-
+ 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-
+ 
         jLabel1.setText("ID Bayar");
-
+ 
         jLabel3.setText("ID Kunjungan");
-
+ 
         jLabel4.setText("Tanggal Bayar");
-
+ 
         jLabel5.setText("Total Tindakan");
-
+ 
         jLabel6.setText("Total Obat");
-
+ 
         jLabel7.setText("Total Biaya");
-
+ 
         jLabel8.setText("Metode Bayar");
-
+ 
         txtTotalTindakan.setEditable(false);
         txtTotalTindakan.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtTotalTindakanActionPerformed(evt);
             }
         });
-
+ 
         txtTotalObat.setEditable(false);
-
+ 
         txtIdBayar.setEnabled(false);
         txtIdBayar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtIdBayarActionPerformed(evt);
             }
         });
-
+ 
         txtTanggalBayar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtTanggalBayarActionPerformed(evt);
             }
         });
-
+ 
         txtTotalBiaya.setEditable(false);
-
-        cmbMetodeBayar.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Tunai", "Transfer", "Qris", "Debit" }));
-
+ 
+        cmbMetodeBayar.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "-- Pilih Metode Bayar --", "Tunai", "Transfer", "Qris", "Debit" }));
+        cmbMetodeBayar.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cmbMetodeBayarItemStateChanged(evt);
+            }
+        });
+ 
         btnSimpan.setText("Simpan");
         btnSimpan.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSimpanActionPerformed(evt);
             }
         });
-
+ 
         btnHapus.setText("Hapus");
         btnHapus.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnHapusActionPerformed(evt);
             }
         });
-
+ 
         btnBatal.setText("Batal");
         btnBatal.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnBatalActionPerformed(evt);
             }
         });
-
+ 
         btnCari.setText("Cari");
         btnCari.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnCariActionPerformed(evt);
             }
         });
-
+ 
         tblPembayaran.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-
+ 
             },
             new String [] {
-                "ID Bayar", "ID Kunjungan", "Tanggal Bayar", "Total Bayar", "Metode Bayar", "Kode Pembayaran"
+                "ID Bayar", "ID Kunjungan", "Tanggal Bayar", "Total Biaya", "Metode Bayar", "Kode Pembayaran"
             }
-        ) {
-            boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false
-            };
-
-            public boolean isCellEditable(int rowIndex, int columnIndex) {
-                return canEdit [columnIndex];
-            }
-        });
+        ));
         tblPembayaran.setGridColor(new java.awt.Color(0, 0, 0));
         tblPembayaran.setShowGrid(true);
         tblPembayaran.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -284,51 +349,57 @@ public class FormPembayaran extends javax.swing.JFrame {
             }
         });
         jScrollPane1.setViewportView(tblPembayaran);
-        if (tblPembayaran.getColumnModel().getColumnCount() > 0) {
-            tblPembayaran.getColumnModel().getColumn(0).setHeaderValue("ID Bayar");
-            tblPembayaran.getColumnModel().getColumn(1).setHeaderValue("ID Kunjungan");
-            tblPembayaran.getColumnModel().getColumn(2).setHeaderValue("Tanggal Bayar");
-            tblPembayaran.getColumnModel().getColumn(3).setHeaderValue("Total Bayar");
-            tblPembayaran.getColumnModel().getColumn(4).setHeaderValue("Metode Bayar");
-            tblPembayaran.getColumnModel().getColumn(5).setHeaderValue("Kode Pembayaran");
-        }
-
+ 
         lblNamaPasien.setText("Nama Pasien");
-
+ 
         jLabel12.setFont(new java.awt.Font("Segoe UI", 1, 24)); // NOI18N
         jLabel12.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel12.setText("F O R M U L I R   P E M B A Y A R A N");
-
+ 
+        txtNamaPasien.setEditable(false);
         txtNamaPasien.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtNamaPasienActionPerformed(evt);
             }
         });
-
-        jLabel9.setText("Total Bayar");
-
-        txtTotalBayar.addActionListener(new java.awt.event.ActionListener() {
+ 
+        jLabel9.setText("Total Pembayaran");
+ 
+        txtTotalPembayaran.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtTotalBayarActionPerformed(evt);
+                txtTotalPembayaranActionPerformed(evt);
             }
         });
-
+ 
         jLabel10.setText("Kembalian");
-
+ 
+        txtKembalian.setEditable(false);
         txtKembalian.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtKembalianActionPerformed(evt);
             }
         });
-
+ 
         jTextField1.setText("Kode Pembayaran");
-
+        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jTextField1ActionPerformed(evt);
+            }
+        });
+ 
+        txtKodePembayaran.setEditable(false);
         txtKodePembayaran.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 txtKodePembayaranActionPerformed(evt);
             }
         });
-
+ 
+        cmbIdKunjungan.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cmbIdKunjunganItemStateChanged(evt);
+            }
+        });
+ 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -336,7 +407,8 @@ public class FormPembayaran extends javax.swing.JFrame {
             .addGroup(layout.createSequentialGroup()
                 .addGap(27, 27, 27)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addGroup(layout.createSequentialGroup()
+                    .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 1256, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(btnSimpan, javax.swing.GroupLayout.PREFERRED_SIZE, 185, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -369,7 +441,7 @@ public class FormPembayaran extends javax.swing.JFrame {
                                     .addComponent(cmbMetodeBayar, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(txtTotalBayar, javax.swing.GroupLayout.PREFERRED_SIZE, 290, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                            .addComponent(txtTotalPembayaran, javax.swing.GroupLayout.PREFERRED_SIZE, 290, javax.swing.GroupLayout.PREFERRED_SIZE)
                                             .addComponent(jLabel9))
                                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 30, Short.MAX_VALUE)
                                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -377,14 +449,13 @@ public class FormPembayaran extends javax.swing.JFrame {
                                             .addComponent(txtKembalian, javax.swing.GroupLayout.PREFERRED_SIZE, 290, javax.swing.GroupLayout.PREFERRED_SIZE))))
                                 .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                         .addGap(54, 54, 54)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, 504, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addComponent(txtCari)
+                                .addGap(18, 18, 18)
                                 .addComponent(btnCari, javax.swing.GroupLayout.PREFERRED_SIZE, 82, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 592, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(jLabel12, javax.swing.GroupLayout.PREFERRED_SIZE, 1256, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 649, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap(54, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -394,11 +465,11 @@ public class FormPembayaran extends javax.swing.JFrame {
                 .addGap(28, 28, 28)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(btnCari, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jScrollPane1))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnCari))
+                        .addGap(12, 12, 12)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -429,7 +500,7 @@ public class FormPembayaran extends javax.swing.JFrame {
                         .addComponent(jLabel7)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(txtTotalBiaya, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addGap(12, 12, 12)
                         .addComponent(jLabel8)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(cmbMetodeBayar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -439,7 +510,7 @@ public class FormPembayaran extends javax.swing.JFrame {
                             .addComponent(jLabel10))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(txtTotalBayar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(txtTotalPembayaran, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(txtKembalian, javax.swing.GroupLayout.PREFERRED_SIZE, 22, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
                         .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -450,16 +521,16 @@ public class FormPembayaran extends javax.swing.JFrame {
                             .addComponent(btnSimpan)
                             .addComponent(btnHapus)
                             .addComponent(btnBatal))))
-                .addContainerGap(225, Short.MAX_VALUE))
+                .addContainerGap(231, Short.MAX_VALUE))
         );
-
+ 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+ 
     private void txtTotalTindakanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTotalTindakanActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtTotalTindakanActionPerformed
-
+ 
     private void tblPembayaranMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_tblPembayaranMouseClicked
         // TODO add your handling code here:
          int row = tblPembayaran.getSelectedRow();
@@ -467,44 +538,47 @@ public class FormPembayaran extends javax.swing.JFrame {
  
         int idBayar = Integer.parseInt(tblPembayaran.getValueAt(row, 0).toString());
         Pembayaran p = pembayaranDao.getById(idBayar);
- 
-        // metode_bayar dan kode_pembayaran tidak ada di model Pembayaran,
-        // jadi diambil langsung dari baris tabel yang sedang ditampilkan.
-        Object metodeBayarRow = tblPembayaran.getValueAt(row, 4);
-        Object kodePembayaranRow = tblPembayaran.getValueAt(row, 5);
+        if (p == null || p.getIdBayar() == 0) return;
  
         txtIdBayar.setText(String.valueOf(p.getIdBayar()));
-        cmbIdKunjungan.setSelectedItem(String.valueOf(p.getIdKunjungan()));        txtTanggalBayar.setText(p.getTglBayar());
+ 
+        // Muat ulang combo ID Kunjungan supaya ID milik data ini tetap
+        // muncul (walaupun sudah "belum bayar"-nya terpakai oleh dirinya
+        // sendiri), lalu pilih ID kunjungan datanya.
+        muatComboIdKunjungan(p.getIdKunjungan());
+        cmbIdKunjungan.setSelectedItem(String.valueOf(p.getIdKunjungan()));
+ 
+        txtTanggalBayar.setText(p.getTglBayar());
         txtTotalTindakan.setText(p.getTotalTindakan() != null ? p.getTotalTindakan().toPlainString() : "0");
         txtTotalObat.setText(p.getTotalObat() != null ? p.getTotalObat().toPlainString() : "0");
-        cmbMetodeBayar.setSelectedItem(metodeBayarRow != null ? metodeBayarRow.toString() : "Tunai");
-        txtTotalBayar.setText(p.getTotalBayar() != null ? p.getTotalBayar().toPlainString() : "0");
-        txtKodePembayaran.setText(kodePembayaranRow != null ? kodePembayaranRow.toString() : "");
+        cmbMetodeBayar.setSelectedItem(p.getMetodeBayar() != null ? p.getMetodeBayar() : "Tunai");
+        txtTotalPembayaran.setText(p.getTotalBayar() != null ? p.getTotalBayar().toPlainString() : "0");
+        txtKodePembayaran.setText(p.getKodePembayaran() != null ? p.getKodePembayaran() : "");
  
         hitungTotalBiaya();
+        aturModeKembalian();
  
         txtNamaPasien.setText(pembayaranDao.getNamaPasienByKunjungan(p.getIdKunjungan()));
     }//GEN-LAST:event_tblPembayaranMouseClicked
-
+ 
     private void btnSimpanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSimpanActionPerformed
         // TODO add your handling code here:
          try {
-            if (cmbIdKunjungan.getSelectedItem() == null || txtTotalBayar.getText().trim().isEmpty()) {
+            if (cmbIdKunjungan.getSelectedItem() == null || txtTotalPembayaran.getText().trim().isEmpty()) {
             JOptionPane.showMessageDialog(this, "Data Kunjungan / Total Bayar belum lengkap!");
             return;
             }
  
-            if (txtKembalian.getText().equals("Uang Kurang")) {
-                JOptionPane.showMessageDialog(this, "Transaksi ditolak: Pembayaran Kurang!");
+            String metodeBayar = cmbMetodeBayar.getSelectedItem() == null
+                    ? null : cmbMetodeBayar.getSelectedItem().toString();
+            if (metodeBayar == null || PILIH_METODE_BAYAR.equals(metodeBayar)) {
+                JOptionPane.showMessageDialog(this, "Silakan pilih metode bayar terlebih dahulu!");
                 return;
             }
  
-            if (txtKodePembayaran.getText().trim().isEmpty()) {
-                txtKodePembayaran.setText(buatKodePembayaran());
-            }
+            boolean isUpdate = !txtIdBayar.getText().trim().isEmpty();
  
             Pembayaran p = new Pembayaran();
-            boolean isUpdate = !txtIdBayar.getText().trim().isEmpty();
             if (isUpdate) {
                 p.setIdBayar(Integer.parseInt(txtIdBayar.getText().trim()));
             }
@@ -512,11 +586,26 @@ public class FormPembayaran extends javax.swing.JFrame {
             p.setIdKunjungan(Integer.parseInt(cmbIdKunjungan.getSelectedItem().toString()));
             p.setTotalTindakan(new BigDecimal(txtTotalTindakan.getText().trim()));
             p.setTotalObat(new BigDecimal(txtTotalObat.getText().trim()));
-            p.setTotalBayar(new BigDecimal(txtTotalBayar.getText().trim()));
+            p.setTotalBayar(new BigDecimal(txtTotalPembayaran.getText().trim()));
             p.setTglBayar(isUpdate ? txtTanggalBayar.getText().trim() : java.time.LocalDate.now().toString());
  
-            String metodeBayar = cmbMetodeBayar.getSelectedItem().toString();
+            // Total bayar tidak boleh kurang dari total biaya (berlaku
+            // untuk semua metode bayar).
+            if (p.getTotalBayar().compareTo(p.getTotalTindakan().add(p.getTotalObat())) < 0) {
+                JOptionPane.showMessageDialog(this, "Transaksi ditolak: Pembayaran Kurang!");
+                return;
+            }
+ 
+            if (!isUpdate) {
+                txtTanggalBayar.setText(p.getTglBayar());
+            }
+ 
+            // Kode pembayaran selalu dibuat/dipastikan otomatis.
             String kodePembayaran = txtKodePembayaran.getText().trim();
+            if (kodePembayaran.isEmpty()) {
+                kodePembayaran = buatKodePembayaran();
+                txtKodePembayaran.setText(kodePembayaran);
+            }
  
             boolean sukses = isUpdate
                     ? pembayaranDao.updatePembayaran(p, metodeBayar, kodePembayaran)
@@ -533,7 +622,7 @@ public class FormPembayaran extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Terjadi kesalahan sistem: " + ex.getMessage());
         }
     }//GEN-LAST:event_btnSimpanActionPerformed
-
+ 
     private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
         // TODO add your handling code here:
         if (txtIdBayar.getText().trim().isEmpty()) {
@@ -551,7 +640,7 @@ public class FormPembayaran extends javax.swing.JFrame {
             tampilkanData();
         }
     }//GEN-LAST:event_btnHapusActionPerformed
-
+ 
     private void btnCariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCariActionPerformed
         // TODO add your handling code here:
         DefaultTableModel model = (DefaultTableModel) tblPembayaran.getModel();
@@ -562,38 +651,42 @@ public class FormPembayaran extends javax.swing.JFrame {
             model.addRow(row);
         }
     }//GEN-LAST:event_btnCariActionPerformed
-
+ 
     private void txtIdBayarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtIdBayarActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtIdBayarActionPerformed
-
+ 
     private void btnBatalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBatalActionPerformed
         // TODO add your handling code here:
         kosongkanForm();
     }//GEN-LAST:event_btnBatalActionPerformed
-
+ 
     private void txtTanggalBayarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTanggalBayarActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtTanggalBayarActionPerformed
-
+ 
     private void txtNamaPasienActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtNamaPasienActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtNamaPasienActionPerformed
-
-    private void txtTotalBayarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTotalBayarActionPerformed
+ 
+    private void txtTotalPembayaranActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTotalPembayaranActionPerformed
         // TODO add your handling code here:
                 hitungKembalian();
-    }//GEN-LAST:event_txtTotalBayarActionPerformed
-
+    }//GEN-LAST:event_txtTotalPembayaranActionPerformed
+ 
     private void txtKembalianActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtKembalianActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtKembalianActionPerformed
-
+ 
     private void txtKodePembayaranActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtKodePembayaranActionPerformed
         // TODO add your handling code here:
-        txtKodePembayaran.setText(buatKodePembayaran());
+        // Kode Pembayaran dibuat otomatis oleh sistem, tidak diisi manual.
     }//GEN-LAST:event_txtKodePembayaranActionPerformed
-
+ 
+    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jTextField1ActionPerformed
+ 
     /**
      * @param args the command line arguments
      */
@@ -611,7 +704,7 @@ public class FormPembayaran extends javax.swing.JFrame {
  
         java.awt.EventQueue.invokeLater(() -> new FormPembayaran(0).setVisible(true));
     }
-
+ 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnBatal;
     private javax.swing.JButton btnCari;
@@ -640,9 +733,9 @@ public class FormPembayaran extends javax.swing.JFrame {
     private javax.swing.JTextField txtKodePembayaran;
     private javax.swing.JTextField txtNamaPasien;
     private javax.swing.JTextField txtTanggalBayar;
-    private javax.swing.JTextField txtTotalBayar;
     private javax.swing.JTextField txtTotalBiaya;
     private javax.swing.JTextField txtTotalObat;
+    private javax.swing.JTextField txtTotalPembayaran;
     private javax.swing.JTextField txtTotalTindakan;
     // End of variables declaration//GEN-END:variables
 }
