@@ -287,6 +287,17 @@ public class FormPembayaran extends javax.swing.JFrame {
         txtTotalBiaya.setEditable(false);
 
         cmbMetodeBayar.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Tunai", "Transfer", "Qris", "Debit" }));
+        cmbMetodeBayar.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cmbMetodeBayarItemStateChanged(evt);
+            }
+        });
+
+        cmbIdKunjungan.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cmbIdKunjunganItemStateChanged(evt);
+            }
+        });
 
         btnSimpan.setText("Simpan");
         btnSimpan.addActionListener(new java.awt.event.ActionListener() {

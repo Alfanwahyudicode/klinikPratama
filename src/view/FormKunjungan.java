@@ -42,7 +42,11 @@ public class FormKunjungan extends javax.swing.JFrame {
         txtNamaDokter.setEditable(false);
         txtTanggal.setEditable(false);
  
-        cmbStatus.setModel(new DefaultComboBoxModel<>(new String[]{"Daftar", "Selesai", "Batal"}));
+        cmbStatus.setModel(new DefaultComboBoxModel<>(new String[]{"Daftar", "Batal"}));
+        // Catatan: "Selesai" sengaja TIDAK dimasukkan sebagai pilihan di sini.
+        // Status "Selesai" hanya boleh terjadi otomatis lewat FormPemeriksaan
+        // saat pemeriksaan disimpan (lihat PemeriksaanDao.tambahPemeriksaan),
+        // supaya tidak ada kunjungan yang ditandai selesai padahal belum diperiksa.
  
         muatComboPasien();
         muatComboDokter();
@@ -52,6 +56,18 @@ public class FormKunjungan extends javax.swing.JFrame {
         tblKunjungan.getSelectionModel().addListSelectionListener(evt -> {
             if (!evt.getValueIsAdjusting()) {
                 isiFormDariTabel();
+            }
+        });
+
+        // Auto-refresh: setiap kali jendela ini difokuskan/aktif lagi,
+        // muat ulang data dari database. Ini penting supaya kalau ada
+        // perubahan status dari FormPemeriksaan (mis. jadi "selesai"
+        // saat Simpan diklik di sana), tabel di sini ikut ter-update
+        // tanpa harus menutup dan membuka ulang FormKunjungan.
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowActivated(java.awt.event.WindowEvent e) {
+                tampilkanDataTabel();
             }
         });
     }
@@ -120,7 +136,9 @@ public class FormKunjungan extends javax.swing.JFrame {
         txtIdKunjungan.setText(formatIdKunjungan(kunjunganDao.getNextIdKunjungan()));
         txtTanggal.setText(new SimpleDateFormat("yyyy-MM-dd").format(new java.util.Date()));
         jlabel.setText("");
+        cmbStatus.setModel(new DefaultComboBoxModel<>(new String[]{"Daftar", "Batal"}));
         cmbStatus.setSelectedItem("Daftar");
+        cmbStatus.setEnabled(true);
  
         if (cmbIdPasien.getItemCount() > 0) {
             cmbIdPasien.setSelectedIndex(0);
@@ -193,7 +211,20 @@ public class FormKunjungan extends javax.swing.JFrame {
         tampilkanNamaDokterTerpilih();
         jlabel.setText(k.getKeluhan());
         txtTanggal.setText(k.getTanggalKunjungan() != null ? k.getTanggalKunjungan().toString() : "");
-        cmbStatus.setSelectedItem(kapitalisasi(k.getStatus()));
+
+        String statusSekarang = kapitalisasi(k.getStatus());
+        if ("Selesai".equalsIgnoreCase(statusSekarang)) {
+            // Kunjungan yang sudah "Selesai" (sudah diperiksa) tidak boleh
+            // diubah statusnya dari sini. Kalau perlu dibatalkan, hapus dulu
+            // data pemeriksaannya lewat FormPemeriksaan (otomatis kembali ke "Daftar").
+            cmbStatus.setModel(new DefaultComboBoxModel<>(new String[]{"Selesai"}));
+            cmbStatus.setSelectedItem("Selesai");
+            cmbStatus.setEnabled(false);
+        } else {
+            cmbStatus.setModel(new DefaultComboBoxModel<>(new String[]{"Daftar", "Batal"}));
+            cmbStatus.setSelectedItem(statusSekarang);
+            cmbStatus.setEnabled(true);
+        }
     }
  
     private boolean validasiForm() {

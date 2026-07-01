@@ -19,6 +19,8 @@ import javax.swing.JOptionPane;
  
 public class PembayaranDao {
  
+    private final KunjunganDao kunjunganDao = new KunjunganDao();
+
 
     private static final int BASE_ID_BAYAR = 270000;
     private static final String TABEL_SEQUENCE = "pembayaran_id_sequence";
@@ -104,6 +106,7 @@ public class PembayaranDao {
         List<Integer> list = new ArrayList<>();
         String sql = "SELECT id_kunjungan FROM kunjungan "
                    + "WHERE id_kunjungan NOT IN (SELECT id_kunjungan FROM pembayaran) "
+                   + "AND status <> 'batal' "
                    + "ORDER BY id_kunjungan DESC";
  
         try (Connection conn = Koneksi.getKoneksi();
@@ -371,6 +374,10 @@ public class PembayaranDao {
                 p.setIdBayar(idBaru);
                 p.setMetodeBayar(metodeBayar);
                 p.setKodePembayaran(kodePembayaran);
+                // Kunjungan yang sudah dibayar otomatis ditandai selesai.
+                // Baris kunjungan TIDAK dihapus, hanya statusnya yang berubah,
+                // sehingga id-nya hilang dari daftar "belum bayar" tapi riwayatnya tetap tersimpan.
+                kunjunganDao.updateStatusKunjungan(p.getIdKunjungan(), "selesai");
             }
             return sukses;
         } catch (SQLException e) {
@@ -412,13 +419,32 @@ public class PembayaranDao {
     }
  
     public boolean hapusPembayaran(int idBayar) {
+        String cekSql = "SELECT id_kunjungan FROM pembayaran WHERE id_bayar=?";
         String sql = "DELETE FROM pembayaran WHERE id_bayar=?";
- 
-        try (Connection conn = Koneksi.getKoneksi();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
- 
-            ps.setInt(1, idBayar);
-            return ps.executeUpdate() > 0;
+
+        try (Connection conn = Koneksi.getKoneksi()) {
+            Integer idKunjungan = null;
+            try (PreparedStatement psCek = conn.prepareStatement(cekSql)) {
+                psCek.setInt(1, idBayar);
+                try (ResultSet rs = psCek.executeQuery()) {
+                    if (rs.next()) {
+                        idKunjungan = rs.getInt("id_kunjungan");
+                    }
+                }
+            }
+
+            boolean sukses;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, idBayar);
+                sukses = ps.executeUpdate() > 0;
+            }
+
+            if (sukses && idKunjungan != null) {
+                // Pembayaran dibatalkan/dihapus -> kunjungan kembali berstatus
+                // "daftar" sehingga muncul lagi di combo box "belum bayar".
+                kunjunganDao.updateStatusKunjungan(idKunjungan, "daftar");
+            }
+            return sukses;
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(null,
                 "Gagal menghapus pembayaran: " + e.getMessage());
