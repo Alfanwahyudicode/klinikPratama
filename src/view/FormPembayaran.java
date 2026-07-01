@@ -22,7 +22,6 @@ public class FormPembayaran extends javax.swing.JFrame {
  
     private static final String PILIH_METODE_BAYAR = "-- Pilih Metode Bayar --";
     private static final Random RNG = new Random();
- 
     public FormPembayaran(int idKunjunganEksternal) {
     initComponents();
     kosongkanForm();
