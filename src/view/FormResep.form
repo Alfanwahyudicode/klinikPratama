@@ -386,6 +386,9 @@
       <Properties>
         <Property name="text" type="java.lang.String" value="Tambah Obat"/>
       </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnTambahObatActionPerformed"/>
+      </Events>
     </Component>
     <Component class="javax.swing.JButton" name="btnHapusObat">
       <Properties>

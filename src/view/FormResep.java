@@ -132,10 +132,6 @@ public class FormResep extends javax.swing.JFrame {
         isiDataObatTerpilih();
     }
 
-    /**
-     * Saat obat pada combo box dipilih, otomatis isi Nama Obat, Stok Obat,
-     * dan Harga Satuan sesuai data master obat, lalu hitung ulang Total Harga.
-     */
     private void isiDataObatTerpilih() {
         sedangMengisiOtomatis = true;
         Obat o = getObatTerpilih();
@@ -181,12 +177,6 @@ public class FormResep extends javax.swing.JFrame {
         }
     }
 
-    /**
-     * Menampilkan ID Resep sesuai format permintaan: "28" + 4 digit urutan,
-     * contoh 280001, 280002, dst. ID ini dijamin unik dan sekali pakai oleh
-     * ResepDao.generateIdResep() (nomor yang sudah pernah dipakai lalu dihapus
-     * tidak akan pernah dipakai ulang).
-     */
     private String formatIdResep(int idResep) {
         return String.valueOf(idResep);
     }
@@ -251,9 +241,6 @@ public class FormResep extends javax.swing.JFrame {
         return null;
     }
 
-    /**
-     * Total Harga (per baris obat) = Jumlah x Harga Satuan, dihitung otomatis.
-     */
     private void hitungTotalHargaBaris() {
         if (sedangMengisiOtomatis) return;
         try {
@@ -270,10 +257,7 @@ public class FormResep extends javax.swing.JFrame {
         }
     }
 
-    /**
-     * Memuat ulang daftar obat pada resep aktif ke tabel detail (jTable2)
-     * dan menghitung ulang SubTotal keseluruhan resep.
-     */
+
     private void refreshTotalResep() {
         if (resepAktif == null) {
             listDetail = new ArrayList<>();
@@ -302,10 +286,6 @@ public class FormResep extends javax.swing.JFrame {
         }
     }
 
-    /**
-     * Mengaktifkan / menonaktifkan bagian "Detail Resep Obat" - hanya bisa
-     * diisi setelah header resep (ID Resep) tersimpan.
-     */
     private void setDetailEnabled(boolean enabled) {
         cmbIdObat.setEnabled(enabled);
         txtJumlah.setEnabled(enabled);
@@ -323,12 +303,7 @@ public class FormResep extends javax.swing.JFrame {
         isiDataObatTerpilih();
     }
 
-    /**
-     * Satu-satunya tempat yang menentukan header resep mana yang sedang aktif
-     * berdasarkan pemeriksaan yang dipilih pada jComboBox1. Dipanggil baik
-     * dari event combo box maupun dari reset form, supaya tidak ada logika
-     * ganda yang saling menimpa (mis. subtotal ke-reset padahal resep ada).
-     */
+
     private void muatResepUntukPemeriksaanTerpilih() {
         Pemeriksaan pe = getPemeriksaanTerpilih();
         if (pe == null) {
@@ -460,7 +435,6 @@ public class FormResep extends javax.swing.JFrame {
                     "Sukses", JOptionPane.INFORMATION_MESSAGE);
             }
         } else {
-            // ===== UPDATE RESEP YANG SUDAH ADA =====
             resepAktif.setIdPemeriksaan(pe.getIdPemeriksaan());
             resepAktif.setTglResep(tglResep);
 
@@ -475,11 +449,6 @@ public class FormResep extends javax.swing.JFrame {
         }
     }
 
-    /**
-     * Tombol "Tambah Obat": menambah obat baru ke resep, ATAU jika sebuah
-     * baris pada tabel detail sedang dipilih untuk diedit (detailAktif != null),
-     * tombol ini akan meng-UPDATE baris tersebut dengan data terbaru.
-     */
     private void tambahObatKeResep() {
         if (!validasiDetail()) return;
 
@@ -495,7 +464,6 @@ public class FormResep extends javax.swing.JFrame {
         String aturanPakai = txtAturanPakai.getText().trim();
 
         if (detailAktif == null) {
-            // ===== MODE TAMBAH BARU =====
             if (jumlahBaru > obatDipilih.getStok()) {
                 JOptionPane.showMessageDialog(this,
                     "Stok obat tidak cukup! Stok tersedia: " + obatDipilih.getStok(),
@@ -524,12 +492,9 @@ public class FormResep extends javax.swing.JFrame {
                     "Sukses", JOptionPane.INFORMATION_MESSAGE);
             }
         } else {
-            // ===== MODE UPDATE BARIS YANG SUDAH ADA =====
             int idObatLama = detailAktif.getIdObat();
             int jumlahLama = detailAktif.getJumlah();
 
-            // Kembalikan dulu stok obat lama seolah-olah baris ini belum ada,
-            // supaya validasi stok obat baru (bisa jadi obat yang sama / berbeda) akurat.
             Obat obatLama = cariObatById(idObatLama);
             int stokTersediaUntukObatBaru = obatDipilih.getStok();
             if (obatLama != null && obatLama.getIdObat() == obatDipilih.getIdObat()) {
@@ -551,10 +516,8 @@ public class FormResep extends javax.swing.JFrame {
 
             if (detailDao.updateDetail(detailAktif)) {
                 if (obatLama != null) {
-                    // kembalikan stok lama
                     obatDao.updateStok(obatLama.getIdObat(), obatLama.getStok() + jumlahLama);
                 }
-                // kurangi stok obat baru (ambil data stok terbaru setelah pengembalian di atas)
                 Obat obatBaruTerkini = obatDao.getAllObat().stream()
                         .filter(o -> o.getIdObat() == obatDipilih.getIdObat())
                         .findFirst().orElse(obatDipilih);
@@ -571,10 +534,6 @@ public class FormResep extends javax.swing.JFrame {
         }
     }
 
-    /**
-     * Tombol "Hapus Obat": menghapus baris obat yang sedang dipilih pada
-     * tabel detail resep (jTable2). Stok obat yang sudah dipakai dikembalikan.
-     */
     private void hapusObatDariResep() {
         if (resepAktif == null) {
             JOptionPane.showMessageDialog(this, "Pilih / simpan resep terlebih dahulu!",
@@ -634,8 +593,6 @@ public class FormResep extends javax.swing.JFrame {
                 }
             }
 
-            // Catatan: id_resep TIDAK akan pernah dipakai ulang walau resep ini dihapus,
-            // karena ResepDao.generateIdResep() memakai nomor urut permanen tersendiri.
             if (resepDao.hapusResep(resepAktif.getIdResep())) {
                 loadComboObat();
                 loadMasterTable();
@@ -656,8 +613,6 @@ public class FormResep extends javax.swing.JFrame {
             for (int i = 0; i < listPemeriksaan.size(); i++) {
                 if (listPemeriksaan.get(i).getIdPemeriksaan() == r.getIdPemeriksaan()) {
                     if (jComboBox1.getSelectedIndex() == i) {
-                        // sudah dipilih sebelumnya, event combo tidak akan otomatis
-                        // terpicu, jadi muat ulang secara manual
                         muatResepUntukPemeriksaanTerpilih();
                     } else {
                         jComboBox1.setSelectedIndex(i); // akan memicu jComboBox1ActionPerformed
@@ -668,11 +623,6 @@ public class FormResep extends javax.swing.JFrame {
         }
     }
 
-    /**
-     * Klik pada baris tabel detail obat (jTable2) akan memuat data baris
-     * tersebut ke form input agar bisa diedit lalu diperbarui lewat tombol
-     * "Tambah Obat" (yang berubah menjadi mode "Update Obat").
-     */
     private void tabelDetailMouseClicked(java.awt.event.MouseEvent evt) {
         int row = jTable2.getSelectedRow();
         if (row < 0 || listDetail == null || row >= listDetail.size()) return;
@@ -686,8 +636,6 @@ public class FormResep extends javax.swing.JFrame {
         if (o != null) {
             txtNamaObat.setText(o.getNamaObat());
             txtHarga.setText(formatRupiah(rd.getHargaSatuan()));
-            // stok yang ditampilkan = stok saat ini + jumlah yang sudah dipakai baris ini,
-            // supaya user tahu batas maksimal jika ingin menambah jumlah.
             txtStok.setText(String.valueOf(o.getStok() + rd.getJumlah()));
         }
         txtJumlah.setText(String.valueOf(rd.getJumlah()));
@@ -901,6 +849,11 @@ public class FormResep extends javax.swing.JFrame {
         jLabel11.setText("DETAIL RESEP OBAT");
 
         btnTambahObat.setText("Tambah Obat");
+        btnTambahObat.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnTambahObatActionPerformed(evt);
+            }
+        });
 
         btnHapusObat.setText("Hapus Obat");
         btnHapusObat.addActionListener(new java.awt.event.ActionListener() {
