@@ -21,10 +21,9 @@ import javax.swing.JOptionPane;
  */
 public class ObatDao {
 
-    // Ambil semua data obat
     public List<Obat> getAllObat() {
         List<Obat> list = new ArrayList<>();
-        String sql = "SELECT * FROM obat ORDER BY id_id_obat ASC"; // Sesuai query asalmu atau "id_obat"
+        String sql = "SELECT * FROM obat ORDER BY id_obat ASC";
 
         try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 
@@ -37,7 +36,6 @@ public class ObatDao {
         return list;
     }
 
-    // Cari obat berdasarkan nama
     public List<Obat> cariObat(String keyword) {
         List<Obat> list = new ArrayList<>();
         String sql = "SELECT * FROM obat WHERE nama_obat LIKE ? ORDER BY id_obat ASC";
@@ -57,16 +55,72 @@ public class ObatDao {
         return list;
     }
 
-    // Tambah obat baru (Sesuai 100% dengan kolom databasemu)
+    private void pastikanTabelSequenceAda(Connection conn) throws SQLException {
+        String sql = "CREATE TABLE IF NOT EXISTS obat_id_sequence (id INT PRIMARY KEY, last_id INT NOT NULL)";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.executeUpdate();
+        }
+    }
+
+    private int ambilIdTerbesarSaatIni(Connection conn) throws SQLException {
+        String sql = "SELECT MAX(id_obat) AS id_terbesar FROM obat WHERE id_obat BETWEEN 130000 AND 139999";
+        try (PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                int idTerbesar = rs.getInt("id_terbesar");
+                if (!rs.wasNull() && idTerbesar >= 130000) {
+                    return idTerbesar;
+                }
+            }
+        }
+        return 130000;
+    }
+
+    public int generateIdObat() {
+        try (Connection conn = Koneksi.getKoneksi()) {
+            pastikanTabelSequenceAda(conn);
+
+            int lastId;
+            String cekSql = "SELECT last_id FROM obat_id_sequence WHERE id = 1";
+            try (PreparedStatement ps = conn.prepareStatement(cekSql); ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    lastId = rs.getInt("last_id");
+                } else {
+                    lastId = ambilIdTerbesarSaatIni(conn);
+                    String insertSql = "INSERT INTO obat_id_sequence (id, last_id) VALUES (1, ?)";
+                    try (PreparedStatement psIns = conn.prepareStatement(insertSql)) {
+                        psIns.setInt(1, lastId);
+                        psIns.executeUpdate();
+                    }
+                }
+            }
+
+            int idBaru = lastId + 1;
+
+            String updateSql = "UPDATE obat_id_sequence SET last_id = ? WHERE id = 1";
+            try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+                ps.setInt(1, idBaru);
+                ps.executeUpdate();
+            }
+
+            return idBaru;
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null, "Gagal membuat ID Obat baru: " + e.getMessage());
+            return 130001;
+        }
+    }
+
     public boolean tambahObat(Obat o) {
-        String sql = "INSERT INTO obat (nama_obat, satuan, stok, harga_jual) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO obat (id_obat, nama_obat, satuan, stok, harga_jual) VALUES (?, ?, ?, ?, ?)";
+
+        o.setIdObat(generateIdObat());
 
         try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, o.getNamaObat());
-            ps.setString(2, o.getSatuan());
-            ps.setInt(3, o.getStok());
-            ps.setBigDecimal(4, o.getHargaJual());
+            ps.setInt(1, o.getIdObat());
+            ps.setString(2, o.getNamaObat());
+            ps.setString(3, o.getSatuan());
+            ps.setInt(4, o.getStok());
+            ps.setBigDecimal(5, o.getHargaJual());
 
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -75,7 +129,6 @@ public class ObatDao {
         }
     }
 
-    // Update data obat lengkap berdasarkan ID Obat
     public boolean updateObat(Obat o) {
         String sql = "UPDATE obat SET nama_obat=?, satuan=?, stok=?, harga_jual=? WHERE id_obat=?";
 
@@ -94,7 +147,6 @@ public class ObatDao {
         }
     }
 
-    // Update stok saja (dipakai saat resep/pemakaian obat)
     public boolean updateStok(int idObat, int stokBaru) {
         String sql = "UPDATE obat SET stok=? WHERE id_obat=?";
 
@@ -110,7 +162,6 @@ public class ObatDao {
         }
     }
 
-    // Hapus obat
     public boolean hapusObat(int idObat) {
         String sql = "DELETE FROM obat WHERE id_obat=?";
 
@@ -124,7 +175,6 @@ public class ObatDao {
         }
     }
 
-    // Helper: mapping ResultSet -> Obat (Sesuai database asli kamu)
     private Obat mapRow(ResultSet rs) throws SQLException {
         Obat o = new Obat();
         o.setIdObat(rs.getInt("id_obat"));
