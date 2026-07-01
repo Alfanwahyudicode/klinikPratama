@@ -1,26 +1,27 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
 package model;
 
 /**
- * Model class Pasien - Sesuai 100% dengan struktur tabel database.
  *
  * @author VanZ
  */
 public class Pasien {
 
     private int idPasien;
-    private String noRm;
     private String namaPasien;
-    private String jk; // Menggunakan 'jk' untuk mencerminkan enum('L','P')
-    private String tglLahir; // Sementara String format (YYYY-MM-DD) atau bisa dikosongkan jika belum ada di GUI
+    private String jk;
+    private String tglLahir;
     private String alamat;
-    private String noTelp; // Sesuai kolom database: no_telp
+    private String noTelp;
 
     public Pasien() {
     }
 
-    public Pasien(int idPasien, String noRm, String namaPasien, String jk, String tglLahir, String alamat, String noTelp) {
+    public Pasien(int idPasien, String namaPasien, String jk, String tglLahir, String alamat, String noTelp) {
         this.idPasien = idPasien;
-        this.noRm = noRm;
         this.namaPasien = namaPasien;
         this.jk = jk;
         this.tglLahir = tglLahir;
@@ -28,21 +29,12 @@ public class Pasien {
         this.noTelp = noTelp;
     }
 
-    // Getter dan Setter
     public int getIdPasien() {
         return idPasien;
     }
 
     public void setIdPasien(int idPasien) {
         this.idPasien = idPasien;
-    }
-
-    public String getNoRm() {
-        return noRm;
-    }
-
-    public void setNoRm(String noRm) {
-        this.noRm = noRm;
     }
 
     public String getNamaPasien() {
@@ -85,3 +77,4 @@ public class Pasien {
         this.noTelp = noTelp;
     }
 }
+ 
