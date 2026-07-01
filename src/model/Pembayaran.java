@@ -3,17 +3,19 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
 package model;
-
+ 
 import java.math.BigDecimal;
-
+ 
 public class Pembayaran {
-
+ 
    private int idBayar;
     private int idKunjungan;
     private BigDecimal totalTindakan;
     private BigDecimal totalObat;
     private BigDecimal totalBayar;
     private String tglBayar;
+    private String metodeBayar;
+    private String kodePembayaran;
  
     public Pembayaran() {
     }
@@ -74,6 +76,22 @@ public class Pembayaran {
  
     public void setTglBayar(String tglBayar) {
         this.tglBayar = tglBayar;
+    }
+ 
+    public String getMetodeBayar() {
+        return metodeBayar;
+    }
+ 
+    public void setMetodeBayar(String metodeBayar) {
+        this.metodeBayar = metodeBayar;
+    }
+ 
+    public String getKodePembayaran() {
+        return kodePembayaran;
+    }
+ 
+    public void setKodePembayaran(String kodePembayaran) {
+        this.kodePembayaran = kodePembayaran;
     }
  
     @Override
