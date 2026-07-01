@@ -425,6 +425,24 @@ public class PembayaranDao {
             return false;
         }
     }
+    
+    public BigDecimal getTotalPendapatan() {
+        BigDecimal total = BigDecimal.ZERO;
+        String sql = "SELECT SUM(total_bayar) AS total FROM pembayaran";
+ 
+        try (Connection conn = Koneksi.getKoneksi();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+ 
+            if (rs.next() && rs.getBigDecimal("total") != null) {
+                total = rs.getBigDecimal("total");
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(null,
+                "Gagal menghitung total pendapatan: " + e.getMessage());
+        }
+        return total;
+    }
  
     private Pembayaran mapRow(ResultSet rs) throws SQLException {
         Pembayaran p = new Pembayaran();
