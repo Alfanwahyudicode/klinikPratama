@@ -246,6 +246,7 @@ public class FormDokter extends javax.swing.JFrame {
         String noTelepon = txtTelepon.getText().trim();
         if (!noTelepon.matches("\\d+")) {
             JOptionPane.showMessageDialog(this, "No Telepon harus diisi dengan angka saja!", "Error", JOptionPane.ERROR_MESSAGE);
+            txtTelepon.requestFocus();
             return;
         }
 
