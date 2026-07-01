@@ -20,7 +20,6 @@ public class FormPembayaran extends javax.swing.JFrame {
    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FormPembayaran.class.getName());
     private PembayaranDao pembayaranDao = new PembayaranDao();
  
-    /** Teks placeholder yang tampil sebelum user memilih metode bayar. */
     private static final String PILIH_METODE_BAYAR = "-- Pilih Metode Bayar --";
     private static final Random RNG = new Random();
  
@@ -36,13 +35,7 @@ public class FormPembayaran extends javax.swing.JFrame {
         cariDataKunjungan();
     }
 }
- 
-    /**
-     * Memuat combo box ID Kunjungan hanya dengan kunjungan yang BELUM
-     * memiliki pembayaran (belum bayar). idKunjunganSaatEdit diisi ketika
-     * form sedang membuka data lama untuk diubah, supaya ID kunjungan milik
-     * data tersebut tetap muncul di daftar walaupun sudah dibayar.
-     */
+
     private void muatComboIdKunjungan(Integer idKunjunganSaatEdit) {
         cmbIdKunjungan.removeAllItems();
         List<Integer> list = pembayaranDao.getIdKunjunganBelumBayar(idKunjunganSaatEdit);
@@ -83,12 +76,7 @@ public class FormPembayaran extends javax.swing.JFrame {
         cariDataKunjungan();
     }
 }
- 
-    /**
-     * Dipanggil setiap kali pilihan Metode Bayar berubah.
-     * - Tunai        : kembalian dihitung OTOMATIS (field non-editable).
-     * - selain Tunai  : kembalian bisa diisi manual (field enabled/editable).
-     */
+
     private void cmbMetodeBayarItemStateChanged(java.awt.event.ItemEvent evt) {
         if (evt.getStateChange() == java.awt.event.ItemEvent.SELECTED) {
             aturModeKembalian();
@@ -120,7 +108,6 @@ public class FormPembayaran extends javax.swing.JFrame {
     }
  
     private void hitungKembalian() {
-        // Kembalian otomatis hanya berlaku untuk metode Tunai.
         Object selected = cmbMetodeBayar.getSelectedItem();
         boolean tunai = selected != null && "Tunai".equals(selected.toString());
         if (!tunai) {
@@ -158,14 +145,7 @@ public class FormPembayaran extends javax.swing.JFrame {
         JOptionPane.showMessageDialog(this, "Gagal memuat data kunjungan!");
     }
     }
- 
-    /**
-     * Membuat Kode Pembayaran otomatis dengan format:
-     * [5 digit angka acak][6 digit tanggal bayar yyMMdd]
-     * Contoh: 48213 260701 -> "48213260701" (11 digit).
-     * Dipastikan unik dengan mengecek ke database, jika sudah ada maka
-     * dibuat ulang bagian acaknya.
-     */
+
     private String buatKodePembayaran() {
         String tglStr = txtTanggalBayar.getText().trim();
         java.time.LocalDate tanggal;
@@ -541,10 +521,7 @@ public class FormPembayaran extends javax.swing.JFrame {
         if (p == null || p.getIdBayar() == 0) return;
  
         txtIdBayar.setText(String.valueOf(p.getIdBayar()));
- 
-        // Muat ulang combo ID Kunjungan supaya ID milik data ini tetap
-        // muncul (walaupun sudah "belum bayar"-nya terpakai oleh dirinya
-        // sendiri), lalu pilih ID kunjungan datanya.
+
         muatComboIdKunjungan(p.getIdKunjungan());
         cmbIdKunjungan.setSelectedItem(String.valueOf(p.getIdKunjungan()));
  
@@ -588,9 +565,7 @@ public class FormPembayaran extends javax.swing.JFrame {
             p.setTotalObat(new BigDecimal(txtTotalObat.getText().trim()));
             p.setTotalBayar(new BigDecimal(txtTotalPembayaran.getText().trim()));
             p.setTglBayar(isUpdate ? txtTanggalBayar.getText().trim() : java.time.LocalDate.now().toString());
- 
-            // Total bayar tidak boleh kurang dari total biaya (berlaku
-            // untuk semua metode bayar).
+
             if (p.getTotalBayar().compareTo(p.getTotalTindakan().add(p.getTotalObat())) < 0) {
                 JOptionPane.showMessageDialog(this, "Transaksi ditolak: Pembayaran Kurang!");
                 return;
@@ -600,7 +575,6 @@ public class FormPembayaran extends javax.swing.JFrame {
                 txtTanggalBayar.setText(p.getTglBayar());
             }
  
-            // Kode pembayaran selalu dibuat/dipastikan otomatis.
             String kodePembayaran = txtKodePembayaran.getText().trim();
             if (kodePembayaran.isEmpty()) {
                 kodePembayaran = buatKodePembayaran();
@@ -680,7 +654,6 @@ public class FormPembayaran extends javax.swing.JFrame {
  
     private void txtKodePembayaranActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtKodePembayaranActionPerformed
         // TODO add your handling code here:
-        // Kode Pembayaran dibuat otomatis oleh sistem, tidak diisi manual.
     }//GEN-LAST:event_txtKodePembayaranActionPerformed
  
     private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
