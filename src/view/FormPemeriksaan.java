@@ -391,22 +391,22 @@ public class FormPemeriksaan extends javax.swing.JFrame {
 
     private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
         // TODO add your handling code here:
-        if (idPemeriksaanTerpilih == 0) {
-            JOptionPane.showMessageDialog(this, "Pilih data pada tabel terlebih dahulu.");
-            return;
-        }
-
-        int konfirmasi = JOptionPane.showConfirmDialog(this,
-                "Yakin hapus data pemeriksaan ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
-
-        if (konfirmasi == JOptionPane.YES_OPTION) {
-            if (dao.hapusPemeriksaan(idPemeriksaanTerpilih)) {
-                JOptionPane.showMessageDialog(this, "Data berhasil dihapus.");
-                bersihkanForm();
-                loadComboKunjungan();
-                loadTabelPemeriksaan();
-            }
-        }
+//        if (idPemeriksaanTerpilih == 0) {
+//            JOptionPane.showMessageDialog(this, "Pilih data pada tabel terlebih dahulu.");
+//            return;
+//        }
+//
+//        int konfirmasi = JOptionPane.showConfirmDialog(this,
+//                "Yakin hapus data pemeriksaan ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+//
+//        if (konfirmasi == JOptionPane.YES_OPTION) {
+//            if (dao.hapusPemeriksaan(idPemeriksaanTerpilih)) {
+//                JOptionPane.showMessageDialog(this, "Data berhasil dihapus.");
+//                bersihkanForm();
+//                loadComboKunjungan();
+//                loadTabelPemeriksaan();
+//            }
+//        }
     }//GEN-LAST:event_btnHapusActionPerformed
 
     private void btnBatalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBatalActionPerformed
