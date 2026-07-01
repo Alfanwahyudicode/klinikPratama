@@ -11,24 +11,23 @@ import koneksi.Koneksi; // Memastikan import package koneksi Anda sudah benar
 
 public class PemeriksaanDao {
 
-    // 1. Mengambil data kunjungan yang belum diperiksa
+    // 1. Mengambil data kunjungan yang MEMILIKI STATUS 'Daftar' dan Belum Diperiksa
     public List<Object[]> getKunjunganBelumPeriksa() {
         List<Object[]> list = new ArrayList<>();
-        // PERBAIKAN: Mengubah k.no_rm menjadi pa.no_rm jika kolom rekam medis ada di tabel pasien
-        String sql = "SELECT k.id_kunjungan, pa.no_rm, pa.nama_pasien, d.nama_dokter, k.keluhan "
+        // Murni mengambil kolom yang ada tanpa memaksakan no_rm
+        String sql = "SELECT k.id_kunjungan, pa.nama_pasien, d.nama_dokter, k.keluhan "
                 + "FROM kunjungan k "
                 + "JOIN pasien pa ON k.id_pasien = pa.id_pasien "
                 + "JOIN dokter d ON k.id_dokter = d.id_dokter "
-                + "WHERE k.id_kunjungan NOT IN (SELECT id_kunjungan FROM pemeriksaan)";
-        try (Connection conn = Koneksi.getKoneksi(); // DIUBAH MENJADI getKoneksi()
-                 PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+                + "WHERE k.status = 'Daftar' "
+                + "AND k.id_kunjungan NOT IN (SELECT id_kunjungan FROM pemeriksaan)";
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 list.add(new Object[]{
-                    rs.getInt("id_kunjungan"),
-                    rs.getString("no_rm"),
-                    rs.getString("nama_pasien"),
-                    rs.getString("nama_dokter"),
-                    rs.getString("keluhan")
+                    rs.getInt("id_kunjungan"), // Index 0
+                    rs.getString("nama_pasien"), // Index 1
+                    rs.getString("nama_dokter"), // Index 2
+                    rs.getString("keluhan") // Index 3
                 });
             }
         } catch (SQLException e) {
@@ -46,8 +45,7 @@ public class PemeriksaanDao {
                 + "JOIN pasien pa ON k.id_pasien = pa.id_pasien "
                 + "JOIN dokter d ON k.id_dokter = d.id_dokter "
                 + "ORDER BY p.id_pemeriksaan DESC";
-        try (Connection conn = Koneksi.getKoneksi(); // DIUBAH MENJADI getKoneksi()
-                 PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 list.add(new Object[]{
                     rs.getInt("id_pemeriksaan"),
@@ -74,8 +72,7 @@ public class PemeriksaanDao {
                 + "JOIN pasien pa ON k.id_pasien = pa.id_pasien "
                 + "JOIN dokter d ON k.id_dokter = d.id_dokter "
                 + "WHERE pa.nama_pasien LIKE ? OR d.nama_dokter LIKE ? OR p.diagnosa LIKE ?";
-        try (Connection conn = Koneksi.getKoneksi(); // DIUBAH MENJADI getKoneksi()
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, "%" + keyword + "%");
             ps.setString(2, "%" + keyword + "%");
             ps.setString(3, "%" + keyword + "%");
@@ -98,28 +95,59 @@ public class PemeriksaanDao {
         return list;
     }
 
-    // 4. Tambah Pemeriksaan
+    // 4. Tambah Pemeriksaan SEKALIGUS Mengubah Status Kunjungan Menjadi 'Selesai'
     public boolean tambahPemeriksaan(Pemeriksaan pe) {
-        String sql = "INSERT INTO pemeriksaan (id_kunjungan, diagnosa, tindakan, catatan, biaya_tindakan) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = Koneksi.getKoneksi(); // DIUBAH MENJADI getKoneksi()
-                 PreparedStatement ps = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, pe.getIdKunjungan());
-            ps.setString(2, pe.getDiagnosa());
-            ps.setString(3, pe.getTindakan());
-            ps.setString(4, pe.getCatatan());
-            ps.setBigDecimal(5, pe.getBiayaTindakan());
+        String sqlPemeriksaan = "INSERT INTO pemeriksaan (id_kunjungan, diagnosa, tindakan, catatan, biaya_tindakan) VALUES (?, ?, ?, ?, ?)";
+        String sqlUpdateKunjungan = "UPDATE kunjungan SET status = 'Selesai' WHERE id_kunjungan = ?";
 
-            int rows = ps.executeUpdate();
-            if (rows > 0) {
-                try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        pe.setIdPemeriksaan(generatedKeys.getInt(1));
+        Connection conn = null;
+        try {
+            conn = Koneksi.getKoneksi();
+            conn.setAutoCommit(false); // Mengaktifkan Transaction agar kedua query sinkron
+
+            // Query A: Input data pemeriksaan
+            try (PreparedStatement psPemeriksaan = conn.prepareStatement(sqlPemeriksaan, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                psPemeriksaan.setInt(1, pe.getIdKunjungan());
+                psPemeriksaan.setString(2, pe.getDiagnosa());
+                psPemeriksaan.setString(3, pe.getTindakan());
+                psPemeriksaan.setString(4, pe.getCatatan());
+                psPemeriksaan.setBigDecimal(5, pe.getBiayaTindakan());
+
+                int rows = psPemeriksaan.executeUpdate();
+                if (rows > 0) {
+                    try (ResultSet generatedKeys = psPemeriksaan.getGeneratedKeys()) {
+                        if (generatedKeys.next()) {
+                            pe.setIdPemeriksaan(generatedKeys.getInt(1));
+                        }
                     }
+
+                    // Query B: Update status di tabel kunjungan menjadi 'Selesai'
+                    try (PreparedStatement psUpdate = conn.prepareStatement(sqlUpdateKunjungan)) {
+                        psUpdate.setInt(1, pe.getIdKunjungan());
+                        psUpdate.executeUpdate();
+                    }
+
+                    conn.commit(); // Eksekusi sukses semua
+                    return true;
                 }
-                return true;
             }
         } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
             e.printStackTrace();
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
         }
         return false;
     }
@@ -127,8 +155,7 @@ public class PemeriksaanDao {
     // 5. Mengambil Objek Pemeriksaan tunggal berdasarkan ID
     public Pemeriksaan getPemeriksaanById(int id) {
         String sql = "SELECT * FROM pemeriksaan WHERE id_pemeriksaan = ?";
-        try (Connection conn = Koneksi.getKoneksi(); // DIUBAH MENJADI getKoneksi()
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -148,28 +175,72 @@ public class PemeriksaanDao {
         return null;
     }
 
-    // 6. Hapus Pemeriksaan
-    public boolean hapusPemeriksaan(int id) {
-        String sql = "DELETE FROM pemeriksaan WHERE id_pemeriksaan = ?";
-        try (Connection conn = Koneksi.getKoneksi(); // DIUBAH MENJADI getKoneksi()
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            return ps.executeUpdate() > 0;
+    // 6. Hapus Pemeriksaan SEKALIGUS Mengembalikan Status Kunjungan ke 'Daftar'
+    public boolean hapusPemeriksaan(int idPemeriksaan) {
+        String sqlGetKunjungan = "SELECT id_kunjungan FROM pemeriksaan WHERE id_pemeriksaan = ?";
+        String sqlDelete = "DELETE FROM pemeriksaan WHERE id_pemeriksaan = ?";
+        String sqlRestoreStatus = "UPDATE kunjungan SET status = 'Daftar' WHERE id_kunjungan = ?";
+
+        Connection conn = null;
+        try {
+            conn = Koneksi.getKoneksi();
+            conn.setAutoCommit(false); // Mengaktifkan Transaction
+
+            int idKunjungan = 0;
+            try (PreparedStatement psGet = conn.prepareStatement(sqlGetKunjungan)) {
+                psGet.setInt(1, idPemeriksaan);
+                try (ResultSet rs = psGet.executeQuery()) {
+                    if (rs.next()) {
+                        idKunjungan = rs.getInt("id_kunjungan");
+                    }
+                }
+            }
+
+            if (idKunjungan != 0) {
+                // Query A: Hapus data pemeriksaan
+                try (PreparedStatement psDelete = conn.prepareStatement(sqlDelete)) {
+                    psDelete.setInt(1, idPemeriksaan);
+                    psDelete.executeUpdate();
+                }
+
+                // Query B: Kembalikan status kunjungan menjadi 'Daftar'
+                try (PreparedStatement psRestore = conn.prepareStatement(sqlRestoreStatus)) {
+                    psRestore.setInt(1, idKunjungan);
+                    psRestore.executeUpdate();
+                }
+
+                conn.commit(); // Eksekusi sukses semua
+                return true;
+            }
         } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
             e.printStackTrace();
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
         }
         return false;
     }
 
+    // 7. Mengambil Semua Data Pemeriksaan Berbentuk Objek List
     public List<Pemeriksaan> getAllPemeriksaan() {
         List<Pemeriksaan> list = new ArrayList<>();
-        // Mengambil id, diagnosa, dan fields lain yang dibutuhkan oleh model Pemeriksaan
         String sql = "SELECT p.id_pemeriksaan, p.id_kunjungan, p.diagnosa, p.tindakan, p.catatan, p.biaya_tindakan "
                 + "FROM pemeriksaan p "
                 + "ORDER BY p.id_pemeriksaan DESC";
 
-        try (Connection conn = koneksi.Koneksi.getKoneksi(); // Pastikan panggil kelas koneksi Anda yang benar
-                 PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+        try (Connection conn = Koneksi.getKoneksi(); PreparedStatement ps = conn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 Pemeriksaan pe = new Pemeriksaan();
@@ -180,7 +251,7 @@ public class PemeriksaanDao {
                 pe.setCatatan(rs.getString("catatan"));
                 pe.setBiayaTindakan(rs.getBigDecimal("biaya_tindakan"));
 
-                list.add(pe); // Memasukkan objek Pemeriksaan ke dalam list
+                list.add(pe);
             }
         } catch (SQLException e) {
             System.out.println("Error getAllPemeriksaan: " + e.getMessage());

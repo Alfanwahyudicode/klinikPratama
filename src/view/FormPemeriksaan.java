@@ -45,31 +45,27 @@ public class FormPemeriksaan extends javax.swing.JFrame {
     private void loadComboKunjungan() {
         listKunjungan = dao.getKunjunganBelumPeriksa();
         cmbKunjungan.removeAllItems();
+        List<Object[]> listKunjungan = dao.getKunjunganBelumPeriksa();
 
-        if (listKunjungan.isEmpty()) {
-            cmbKunjungan.addItem("Tidak ada kunjungan yang belum diperiksa");
-        } else {
-            for (Object[] k : listKunjungan) {
-                // Sesuai internal DAO: k[1] No RM, k[2] Nama Pasien, k[3] Nama Dokter
-                cmbKunjungan.addItem(k[1] + " - " + k[2] + " - " + k[3]);
-            }
+        for (Object[] k : listKunjungan) {
+            // k[1] adalah Nama Pasien, k[2] adalah Nama Dokter
+            String tampilanBaris = "Pasien: " + k[1] + " | Dokter: " + k[2];
+            cmbKunjungan.addItem(tampilanBaris);
         }
-        tampilkanInfoKunjungan();
     }
-
     private void tampilkanInfoKunjungan() {
         if (listKunjungan == null || listKunjungan.isEmpty()) {
             lblInfoKunjungan.setText("<html> <br>Pasien: -<br>Dokter: -<br>Keluhan: -</html>");
             return;
         }
-
+ 
         int index = cmbKunjungan.getSelectedIndex();
         if (index >= 0 && index < listKunjungan.size()) {
             Object[] k = listKunjungan.get(index);
             lblInfoKunjungan.setText("<html>"
-                    + "<br>Pasien: " + k[2]
-                    + "<br>Dokter: " + k[3]
-                    + "<br>Keluhan: " + k[4] + "</html>");
+                    + "<br>Pasien: " + k[1]
+                    + "<br>Dokter: " + k[2]
+                    + "<br>Keluhan: " + k[3] + "</html>");
         }
     }
 
@@ -103,7 +99,6 @@ public class FormPemeriksaan extends javax.swing.JFrame {
         txtBiayaTindakan.setText("");
         idPemeriksaanTerpilih = 0;
 
-        // PERBAIKAN: Reset label informasi kunjungan agar tidak menggantung data lama
         lblInfoKunjungan.setText("<html> <br>Pasien: -<br>Dokter: -<br>Keluhan: -</html>");
 
         if (cmbKunjungan.getItemCount() > 0) {
@@ -264,12 +259,12 @@ public class FormPemeriksaan extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addComponent(jLabel6, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 232, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 101, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 111, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(txtBiayaTindakan, javax.swing.GroupLayout.PREFERRED_SIZE, 600, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(txtBiayaTindakan, javax.swing.GroupLayout.DEFAULT_SIZE, 600, Short.MAX_VALUE)
                             .addGroup(layout.createSequentialGroup()
                                 .addGap(12, 12, 12)
                                 .addComponent(btnSimpan, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -277,14 +272,13 @@ public class FormPemeriksaan extends javax.swing.JFrame {
                                 .addComponent(btnHapus, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
                                 .addComponent(btnBatal, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 214, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.PREFERRED_SIZE, 600, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(cmbKunjungan, javax.swing.GroupLayout.PREFERRED_SIZE, 600, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(lblInfoKunjungan, javax.swing.GroupLayout.PREFERRED_SIZE, 623, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
+                            .addComponent(jScrollPane3)
+                            .addComponent(jScrollPane2)
+                            .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 214, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 600, Short.MAX_VALUE)
+                            .addComponent(cmbKunjungan, 0, 600, Short.MAX_VALUE)
+                            .addComponent(lblInfoKunjungan, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(41, 41, 41)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                                 .addComponent(txtCari)
