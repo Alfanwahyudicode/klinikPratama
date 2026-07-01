@@ -12,7 +12,6 @@ import model.Obat;
 import model.Pemeriksaan;
 import model.Resep;
 import model.ResepDetail;
-
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;
@@ -26,7 +25,7 @@ import javax.swing.table.DefaultTableModel;
  * @author VanZ
  */
 public class FormResep extends javax.swing.JFrame {
-    
+
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(FormResep.class.getName());
 
     private final ResepDao       resepDao       = new ResepDao();
@@ -40,36 +39,46 @@ public class FormResep extends javax.swing.JFrame {
     private Resep resepAktif = null;
     private List<ResepDetail> listDetail = new ArrayList<>();
     private List<Resep> listResepMaster = new ArrayList<>();
+
+    // Baris detail (obat) yang sedang diedit dari tabel bawah. null = mode tambah baru.
+    private ResepDetail detailAktif = null;
+
+    // Flag supaya listener tidak saling memicu ulang saat kita mengisi field secara program.
+    private boolean sedangMengisiOtomatis = false;
+
     /**
      * Creates new form FormResep
      */
     public FormResep() {
-         initComponents();
+        initComponents();
         setupTabel();
+        setupTabelDetail();
         loadComboPemeriksaan();
         loadComboObat();
         loadMasterTable();
+
         txtTglResep.setText(LocalDate.now().toString());
+
         txtIdResep.setEditable(false);
-        txtIdResep.setText("R-");
         txtSubtotal.setEditable(false);
-        txtSubtotal.setText("Rp 0");
         txtCatatanPemerisaan.setEditable(false);
+        txtNamaObat.setEditable(false);
+        txtStok.setEditable(false);
+        txtHarga.setEditable(false);
+        jTextField1.setEditable(false);
+
+        txtSubtotal.setText("Rp 0");
         txtCatatanPemerisaan.setText("");
-        
-         txtJumlah.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungSubtotal(); }
+
+        txtJumlah.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungTotalHargaBaris(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungTotalHargaBaris(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungTotalHargaBaris(); }
         });
 
-        txtHargaSatuan.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e)  { hitungSubtotal(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { hitungSubtotal(); }
-        });
+        resetFormPenuh();
     }
-    
+
     private void setupTabel() {
         DefaultTableModel model = new DefaultTableModel(
                 new Object[]{"ID Resep", "ID Pemeriksaan", "Tanggal Resep", "SubTotal"}, 0) {
@@ -88,8 +97,28 @@ public class FormResep extends javax.swing.JFrame {
             }
         });
     }
-    
-        private void loadComboObat() {
+
+    private void setupTabelDetail() {
+        DefaultTableModel model = new DefaultTableModel(
+                new Object[]{"No", "ID Obat", "Nama", "Total Harga"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int col) {
+                return false;
+            }
+        };
+        jTable2.setModel(model);
+        jTable2.getTableHeader().setReorderingAllowed(false);
+        jTable2.setSelectionMode(javax.swing.ListSelectionModel.SINGLE_SELECTION);
+
+        jTable2.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                tabelDetailMouseClicked(evt);
+            }
+        });
+    }
+
+    private void loadComboObat() {
         listObat = obatDao.getAllObat();
         cmbIdObat.removeAllItems();
 
@@ -97,25 +126,36 @@ public class FormResep extends javax.swing.JFrame {
             cmbIdObat.addItem("Tidak ada data obat");
         } else {
             for (Obat o : listObat) {
-                cmbIdObat.addItem(o.toString());
+                cmbIdObat.addItem(o.getIdObat() + " - " + o.getNamaObat());
             }
         }
-        isiHargaDariObatTerpilih();
+        isiDataObatTerpilih();
     }
-        private void isiHargaDariObatTerpilih() {
-        int idx = cmbIdObat.getSelectedIndex();
-        if (listObat != null && idx >= 0 && idx < listObat.size()) {
-            Obat o = listObat.get(idx);
-            BigDecimal harga = o.getHargaJual();
-            txtHargaSatuan.setText(harga != null ? formatRupiah(harga) : "Rp 0");
-            hitungSubtotal();
+
+    /**
+     * Saat obat pada combo box dipilih, otomatis isi Nama Obat, Stok Obat,
+     * dan Harga Satuan sesuai data master obat, lalu hitung ulang Total Harga.
+     */
+    private void isiDataObatTerpilih() {
+        sedangMengisiOtomatis = true;
+        Obat o = getObatTerpilih();
+        if (o != null) {
+            txtNamaObat.setText(o.getNamaObat());
+            txtStok.setText(String.valueOf(o.getStok()));
+            txtHarga.setText(formatRupiah(o.getHargaJual()));
+        } else {
+            txtNamaObat.setText("");
+            txtStok.setText("");
+            txtHarga.setText("");
         }
+        sedangMengisiOtomatis = false;
+        hitungTotalHargaBaris();
     }
-        
+
     private void loadComboPemeriksaan() {
         listPemeriksaan = pemeriksaanDao.getAllPemeriksaan();
         jComboBox1.removeAllItems();
- 
+
         if (listPemeriksaan.isEmpty()) {
             jComboBox1.addItem("Tidak ada data pemeriksaan");
         } else {
@@ -124,7 +164,7 @@ public class FormResep extends javax.swing.JFrame {
             }
         }
     }
-    
+
     private void loadMasterTable() {
         listResepMaster = resepDao.getAllResep();
         DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
@@ -140,16 +180,15 @@ public class FormResep extends javax.swing.JFrame {
             });
         }
     }
-    
-    private String formatIdResep(int idResep) {
-        return "R-" + String.format("%03d", idResep);
-    }
 
-    private int parseIdResep(String formatted) {
-        if (formatted == null) return -1;
-        String angkaSaja = formatted.replaceAll("[^0-9]", "");
-        if (angkaSaja.isEmpty()) return -1;
-        return Integer.parseInt(angkaSaja);
+    /**
+     * Menampilkan ID Resep sesuai format permintaan: "28" + 4 digit urutan,
+     * contoh 280001, 280002, dst. ID ini dijamin unik dan sekali pakai oleh
+     * ResepDao.generateIdResep() (nomor yang sudah pernah dipakai lalu dihapus
+     * tidak akan pernah dipakai ulang).
+     */
+    private String formatIdResep(int idResep) {
+        return String.valueOf(idResep);
     }
 
     private String formatRupiah(BigDecimal angka) {
@@ -157,6 +196,17 @@ public class FormResep extends javax.swing.JFrame {
         java.text.NumberFormat format = java.text.NumberFormat.getCurrencyInstance(
             new java.util.Locale("id", "ID"));
         return format.format(angka);
+    }
+
+    private BigDecimal parseRupiah(String teks) {
+        if (teks == null) return null;
+        String bersih = teks.replace("Rp", "").replace(".", "").replace(",", ".").trim();
+        if (bersih.isEmpty()) return null;
+        try {
+            return new BigDecimal(bersih);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private String cariNamaObat(int idObat) {
@@ -183,6 +233,16 @@ public class FormResep extends javax.swing.JFrame {
         return null;
     }
 
+    private void pilihObatPadaCombo(int idObat) {
+        if (listObat == null) return;
+        for (int i = 0; i < listObat.size(); i++) {
+            if (listObat.get(i).getIdObat() == idObat) {
+                cmbIdObat.setSelectedIndex(i);
+                return;
+            }
+        }
+    }
+
     private Pemeriksaan getPemeriksaanTerpilih() {
         int idx = jComboBox1.getSelectedIndex();
         if (listPemeriksaan != null && idx >= 0 && idx < listPemeriksaan.size()) {
@@ -190,52 +250,154 @@ public class FormResep extends javax.swing.JFrame {
         }
         return null;
     }
- 
-    private void hitungSubtotal() {
+
+    /**
+     * Total Harga (per baris obat) = Jumlah x Harga Satuan, dihitung otomatis.
+     */
+    private void hitungTotalHargaBaris() {
+        if (sedangMengisiOtomatis) return;
         try {
             int jumlah = Integer.parseInt(txtJumlah.getText().trim());
-            String hargaBersih = txtHargaSatuan.getText()
-                .replace("Rp", "").replace(".", "").replace(",", ".").trim();
-            BigDecimal harga = new BigDecimal(hargaBersih);
-            BigDecimal sub   = harga.multiply(BigDecimal.valueOf(jumlah));
-            txtSubtotal.setText(formatRupiah(sub));
+            BigDecimal harga = parseRupiah(txtHarga.getText());
+            if (harga == null) {
+                jTextField1.setText("Rp 0");
+                return;
+            }
+            BigDecimal total = harga.multiply(BigDecimal.valueOf(jumlah));
+            jTextField1.setText(formatRupiah(total));
         } catch (NumberFormatException e) {
-            txtSubtotal.setText("Rp 0");
+            jTextField1.setText("Rp 0");
         }
     }
+
+    /**
+     * Memuat ulang daftar obat pada resep aktif ke tabel detail (jTable2)
+     * dan menghitung ulang SubTotal keseluruhan resep.
+     */
     private void refreshTotalResep() {
         if (resepAktif == null) {
+            listDetail = new ArrayList<>();
+            loadTabelDetail();
             txtSubtotal.setText("Rp 0");
             return;
         }
         listDetail = detailDao.getByResepId(resepAktif.getIdResep());
+        loadTabelDetail();
         BigDecimal total = detailDao.getTotalByResepId(resepAktif.getIdResep());
         txtSubtotal.setText(formatRupiah(total));
     }
 
+    private void loadTabelDetail() {
+        DefaultTableModel model = (DefaultTableModel) jTable2.getModel();
+        model.setRowCount(0);
+
+        int no = 1;
+        for (ResepDetail rd : listDetail) {
+            model.addRow(new Object[]{
+                no++,
+                rd.getIdObat(),
+                cariNamaObat(rd.getIdObat()),
+                formatRupiah(rd.getSubtotal())
+            });
+        }
+    }
+
+    /**
+     * Mengaktifkan / menonaktifkan bagian "Detail Resep Obat" - hanya bisa
+     * diisi setelah header resep (ID Resep) tersimpan.
+     */
+    private void setDetailEnabled(boolean enabled) {
+        cmbIdObat.setEnabled(enabled);
+        txtJumlah.setEnabled(enabled);
+        txtAturanPakai.setEnabled(enabled);
+        btnTambahObat.setEnabled(enabled);
+        btnHapusObat.setEnabled(enabled);
+    }
+
     private void bersihkanForm() {
+        detailAktif = null;
+        btnTambahObat.setText("Tambah Obat");
         txtJumlah.setText("");
         txtAturanPakai.setText("");
         if (listObat != null && !listObat.isEmpty()) cmbIdObat.setSelectedIndex(0);
-        isiHargaDariObatTerpilih();
+        isiDataObatTerpilih();
+    }
+
+    /**
+     * Satu-satunya tempat yang menentukan header resep mana yang sedang aktif
+     * berdasarkan pemeriksaan yang dipilih pada jComboBox1. Dipanggil baik
+     * dari event combo box maupun dari reset form, supaya tidak ada logika
+     * ganda yang saling menimpa (mis. subtotal ke-reset padahal resep ada).
+     */
+    private void muatResepUntukPemeriksaanTerpilih() {
+        Pemeriksaan pe = getPemeriksaanTerpilih();
+        if (pe == null) {
+            resepAktif = null;
+            listDetail = new ArrayList<>();
+            txtIdResep.setText("(otomatis)");
+            txtTglResep.setText(LocalDate.now().toString());
+            txtCatatanPemerisaan.setText("");
+            jTable1.clearSelection();
+            setDetailEnabled(false);
+            bersihkanForm();
+            loadTabelDetail();
+            txtSubtotal.setText("Rp 0");
+            return;
+        }
+
+        txtCatatanPemerisaan.setText(pe.getCatatan() != null ? pe.getCatatan() : "");
+
+        Resep existing = resepDao.getByIdPemeriksaan(pe.getIdPemeriksaan());
+        if (existing != null) {
+            resepAktif = existing;
+            txtIdResep.setText(formatIdResep(existing.getIdResep()));
+            txtTglResep.setText(existing.getTglResep() != null
+                ? existing.getTglResep().toString() : LocalDate.now().toString());
+            setDetailEnabled(true);
+            bersihkanForm();
+            refreshTotalResep();
+
+            if (listResepMaster != null) {
+                for (int i = 0; i < listResepMaster.size(); i++) {
+                    if (listResepMaster.get(i).getIdResep() == existing.getIdResep()) {
+                        jTable1.setRowSelectionInterval(i, i);
+                        break;
+                    }
+                }
+            }
+        } else {
+            resepAktif = null;
+            listDetail = new ArrayList<>();
+            txtIdResep.setText("(otomatis)");
+            txtTglResep.setText(LocalDate.now().toString());
+            jTable1.clearSelection();
+            setDetailEnabled(false);
+            bersihkanForm();
+            loadTabelDetail();
+            txtSubtotal.setText("Rp 0");
+        }
     }
 
     private void resetFormPenuh() {
         resepAktif = null;
+        detailAktif = null;
         listDetail = new ArrayList<>();
-        txtIdResep.setText("(otomatis)");
-        txtTglResep.setText(LocalDate.now().toString());
-        txtCatatanPemerisaan.setText("");
-        if (jComboBox1.getItemCount() > 0) jComboBox1.setSelectedIndex(0);
-        bersihkanForm();
-        txtSubtotal.setText("Rp 0");
         jTable1.clearSelection();
+        if (jComboBox1.getItemCount() > 0) {
+            jComboBox1.setSelectedIndex(0);
+        }
+        muatResepUntukPemeriksaanTerpilih();
     }
-    
+
     private boolean validasiDetail() {
         if (resepAktif == null) {
             JOptionPane.showMessageDialog(this,
                 "Simpan Resep (Header) terlebih dahulu sebelum menambah obat!",
+                "Peringatan", JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        if (getObatTerpilih() == null) {
+            JOptionPane.showMessageDialog(this, "Pilih obat terlebih dahulu!",
                 "Peringatan", JOptionPane.WARNING_MESSAGE);
             return false;
         }
@@ -252,14 +414,14 @@ public class FormResep extends javax.swing.JFrame {
                 "Validasi", JOptionPane.WARNING_MESSAGE);
             return false;
         }
-        if (txtHargaSatuan.getText().trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Harga Satuan tidak boleh kosong!",
+        if (txtAturanPakai.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Aturan Pakai tidak boleh kosong!",
                 "Validasi", JOptionPane.WARNING_MESSAGE);
             return false;
         }
         return true;
     }
-    
+
     private void simpanResepHeader() {
         Pemeriksaan pe = getPemeriksaanTerpilih();
         if (pe == null) {
@@ -279,7 +441,7 @@ public class FormResep extends javax.swing.JFrame {
         }
 
         if (resepAktif == null) {
-            // ===== INSERT RESEP BARU =====
+            // ===== INSERT RESEP BARU (ID Resep dibuat otomatis & sekali pakai) =====
             Resep r = new Resep(pe.getIdPemeriksaan(), tglResep);
             int idBaru = resepDao.tambahResep(r);
 
@@ -288,6 +450,9 @@ public class FormResep extends javax.swing.JFrame {
                 listDetail = new ArrayList<>();
                 txtIdResep.setText(formatIdResep(idBaru));
                 txtCatatanPemerisaan.setText(pe.getCatatan() != null ? pe.getCatatan() : "");
+                setDetailEnabled(true);
+                bersihkanForm();
+                refreshTotalResep();
                 loadMasterTable();
                 JOptionPane.showMessageDialog(this,
                     "Resep baru berhasil disimpan! ID Resep: " + formatIdResep(idBaru)
@@ -301,6 +466,7 @@ public class FormResep extends javax.swing.JFrame {
 
             if (resepDao.updateResep(resepAktif)) {
                 txtCatatanPemerisaan.setText(pe.getCatatan() != null ? pe.getCatatan() : "");
+                setDetailEnabled(true);
                 loadMasterTable();
                 JOptionPane.showMessageDialog(this,
                     "Resep " + formatIdResep(resepAktif.getIdResep()) + " berhasil diperbarui!",
@@ -308,66 +474,107 @@ public class FormResep extends javax.swing.JFrame {
             }
         }
     }
+
+    /**
+     * Tombol "Tambah Obat": menambah obat baru ke resep, ATAU jika sebuah
+     * baris pada tabel detail sedang dipilih untuk diedit (detailAktif != null),
+     * tombol ini akan meng-UPDATE baris tersebut dengan data terbaru.
+     */
     private void tambahObatKeResep() {
-        if (resepAktif == null) {
-            JOptionPane.showMessageDialog(this,
-                "Simpan Resep (Header) terlebih dahulu sebelum menambah obat!",
-                "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
         if (!validasiDetail()) return;
 
         Obat obatDipilih = getObatTerpilih();
-        if (obatDipilih == null) {
-            JOptionPane.showMessageDialog(this, "Pilih obat terlebih dahulu!",
-                "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        int jumlah = Integer.parseInt(txtJumlah.getText().trim());
-        if (jumlah > obatDipilih.getStok()) {
-            JOptionPane.showMessageDialog(this,
-                "Stok obat tidak cukup! Stok tersedia: " + obatDipilih.getStok(),
-                "Peringatan", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        BigDecimal harga;
-        try {
-            String hargaBersih = txtHargaSatuan.getText()
-                .replace("Rp", "").replace(".", "").replace(",", ".").trim();
-            harga = new BigDecimal(hargaBersih);
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Format Harga Satuan tidak valid!",
+        int jumlahBaru = Integer.parseInt(txtJumlah.getText().trim());
+        BigDecimal harga = parseRupiah(txtHarga.getText());
+        if (harga == null) {
+            JOptionPane.showMessageDialog(this, "Harga Satuan tidak valid!",
                 "Validasi", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        BigDecimal subtotalBaris = harga.multiply(BigDecimal.valueOf(jumlahBaru));
+        String aturanPakai = txtAturanPakai.getText().trim();
 
-        BigDecimal subtotalBaris = harga.multiply(BigDecimal.valueOf(jumlah));
+        if (detailAktif == null) {
+            // ===== MODE TAMBAH BARU =====
+            if (jumlahBaru > obatDipilih.getStok()) {
+                JOptionPane.showMessageDialog(this,
+                    "Stok obat tidak cukup! Stok tersedia: " + obatDipilih.getStok(),
+                    "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
 
-        ResepDetail rd = new ResepDetail(
-            resepAktif.getIdResep(),
-            obatDipilih.getIdObat(),
-            jumlah,
-            txtAturanPakai.getText().trim(),
-            harga,
-            subtotalBaris
-        );
+            ResepDetail rd = new ResepDetail(
+                resepAktif.getIdResep(),
+                obatDipilih.getIdObat(),
+                jumlahBaru,
+                aturanPakai,
+                harga,
+                subtotalBaris
+            );
 
-        int idDetail = detailDao.tambahDetail(rd);
-        if (idDetail > 0) {
-            obatDao.updateStok(obatDipilih.getIdObat(), obatDipilih.getStok() - jumlah);
-            loadComboObat();
-            bersihkanForm();
-            refreshTotalResep();
-            loadMasterTable();
-            JOptionPane.showMessageDialog(this,
-                "Obat berhasil ditambahkan ke resep " + formatIdResep(resepAktif.getIdResep())
-                + ".\nJumlah jenis obat pada resep ini sekarang: " + listDetail.size(),
-                "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            int idDetail = detailDao.tambahDetail(rd);
+            if (idDetail > 0) {
+                obatDao.updateStok(obatDipilih.getIdObat(), obatDipilih.getStok() - jumlahBaru);
+                loadComboObat();
+                bersihkanForm();
+                refreshTotalResep();
+                loadMasterTable();
+                JOptionPane.showMessageDialog(this,
+                    "Obat berhasil ditambahkan ke resep " + formatIdResep(resepAktif.getIdResep()) + ".",
+                    "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            }
+        } else {
+            // ===== MODE UPDATE BARIS YANG SUDAH ADA =====
+            int idObatLama = detailAktif.getIdObat();
+            int jumlahLama = detailAktif.getJumlah();
+
+            // Kembalikan dulu stok obat lama seolah-olah baris ini belum ada,
+            // supaya validasi stok obat baru (bisa jadi obat yang sama / berbeda) akurat.
+            Obat obatLama = cariObatById(idObatLama);
+            int stokTersediaUntukObatBaru = obatDipilih.getStok();
+            if (obatLama != null && obatLama.getIdObat() == obatDipilih.getIdObat()) {
+                stokTersediaUntukObatBaru += jumlahLama;
+            }
+
+            if (jumlahBaru > stokTersediaUntukObatBaru) {
+                JOptionPane.showMessageDialog(this,
+                    "Stok obat tidak cukup! Stok tersedia: " + stokTersediaUntukObatBaru,
+                    "Peringatan", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            detailAktif.setIdObat(obatDipilih.getIdObat());
+            detailAktif.setJumlah(jumlahBaru);
+            detailAktif.setAturanPakai(aturanPakai);
+            detailAktif.setHargaSatuan(harga);
+            detailAktif.setSubtotal(subtotalBaris);
+
+            if (detailDao.updateDetail(detailAktif)) {
+                if (obatLama != null) {
+                    // kembalikan stok lama
+                    obatDao.updateStok(obatLama.getIdObat(), obatLama.getStok() + jumlahLama);
+                }
+                // kurangi stok obat baru (ambil data stok terbaru setelah pengembalian di atas)
+                Obat obatBaruTerkini = obatDao.getAllObat().stream()
+                        .filter(o -> o.getIdObat() == obatDipilih.getIdObat())
+                        .findFirst().orElse(obatDipilih);
+                obatDao.updateStok(obatBaruTerkini.getIdObat(), obatBaruTerkini.getStok() - jumlahBaru);
+
+                loadComboObat();
+                bersihkanForm();
+                refreshTotalResep();
+                loadMasterTable();
+                JOptionPane.showMessageDialog(this,
+                    "Data obat pada resep berhasil diperbarui.",
+                    "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            }
         }
     }
 
+    /**
+     * Tombol "Hapus Obat": menghapus baris obat yang sedang dipilih pada
+     * tabel detail resep (jTable2). Stok obat yang sudah dipakai dikembalikan.
+     */
     private void hapusObatDariResep() {
         if (resepAktif == null) {
             JOptionPane.showMessageDialog(this, "Pilih / simpan resep terlebih dahulu!",
@@ -375,35 +582,15 @@ public class FormResep extends javax.swing.JFrame {
             return;
         }
 
-        listDetail = detailDao.getByResepId(resepAktif.getIdResep());
-        if (listDetail == null || listDetail.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Belum ada obat pada resep ini.",
-                "Info", JOptionPane.INFORMATION_MESSAGE);
+        int row = jTable2.getSelectedRow();
+        if (row < 0 || listDetail == null || row >= listDetail.size()) {
+            JOptionPane.showMessageDialog(this,
+                "Pilih baris obat pada tabel detail yang ingin dihapus terlebih dahulu.",
+                "Peringatan", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        String[] opsi = new String[listDetail.size()];
-        for (int i = 0; i < listDetail.size(); i++) {
-            ResepDetail rd = listDetail.get(i);
-            opsi[i] = cariNamaObat(rd.getIdObat())
-                    + "  |  Jumlah: " + rd.getJumlah()
-                    + "  |  Aturan: " + rd.getAturanPakai()
-                    + "  |  Subtotal: " + formatRupiah(rd.getSubtotal());
-        }
-
-        String pilihan = (String) JOptionPane.showInputDialog(this,
-            "Pilih obat yang ingin dihapus dari resep ini:",
-            "Hapus Obat", JOptionPane.QUESTION_MESSAGE, null, opsi, opsi[0]);
-
-        if (pilihan == null) return;
-
-        int idx = -1;
-        for (int i = 0; i < opsi.length; i++) {
-            if (opsi[i].equals(pilihan)) { idx = i; break; }
-        }
-        if (idx < 0) return;
-
-        ResepDetail target = listDetail.get(idx);
+        ResepDetail target = listDetail.get(row);
 
         int konfirmasi = JOptionPane.showConfirmDialog(this,
             "Yakin hapus obat \"" + cariNamaObat(target.getIdObat()) + "\" dari resep ini?",
@@ -417,15 +604,15 @@ public class FormResep extends javax.swing.JFrame {
 
             if (detailDao.hapusDetail(target.getIdResepDetail())) {
                 loadComboObat();
+                bersihkanForm();
                 refreshTotalResep();
                 loadMasterTable();
-                JOptionPane.showMessageDialog(this, "Obat berhasil dihapus dari resep!\n"
-                    + "Anda bisa menambahkan obat pengganti melalui tombol Tambah Obat.",
+                JOptionPane.showMessageDialog(this, "Obat berhasil dihapus dari resep!",
                     "Sukses", JOptionPane.INFORMATION_MESSAGE);
             }
         }
     }
-    
+
     private void hapusResepHeader() {
         if (resepAktif == null) {
             JOptionPane.showMessageDialog(this, "Pilih resep yang ingin dihapus terlebih dahulu!",
@@ -447,6 +634,8 @@ public class FormResep extends javax.swing.JFrame {
                 }
             }
 
+            // Catatan: id_resep TIDAK akan pernah dipakai ulang walau resep ini dihapus,
+            // karena ResepDao.generateIdResep() memakai nomor urut permanen tersendiri.
             if (resepDao.hapusResep(resepAktif.getIdResep())) {
                 loadComboObat();
                 loadMasterTable();
@@ -457,57 +646,62 @@ public class FormResep extends javax.swing.JFrame {
         }
     }
 
-    
-    private void loadTabelDetail() {
-    if (resepAktif == null) return;
-
-    listDetail = detailDao.getByResepId(resepAktif.getIdResep());
-    DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
-    model.setRowCount(0);
-
-    int no = 1;
-    for (ResepDetail rd : listDetail) {
-        String namaObat = cariNamaObat(rd.getIdObat());
-        model.addRow(new Object[]{
-            no++,
-            rd.getIdResep(),
-            namaObat,
-            rd.getJumlah(),
-            rd.getAturanPakai(),
-            formatRupiah(rd.getHargaSatuan()),   // ← format rupiah
-            formatRupiah(rd.getSubtotal())        // ← format rupiah
-        });
-    }
-}
-    
- 
     private void tabelMouseClicked(java.awt.event.MouseEvent evt) {
         int row = jTable1.getSelectedRow();
         if (row < 0 || listResepMaster == null || row >= listResepMaster.size()) return;
 
         Resep r = listResepMaster.get(row);
-        resepAktif = r;
-        txtIdResep.setText(formatIdResep(r.getIdResep()));
-        txtTglResep.setText(r.getTglResep() != null ? r.getTglResep().toString() : LocalDate.now().toString());
 
         if (listPemeriksaan != null) {
             for (int i = 0; i < listPemeriksaan.size(); i++) {
                 if (listPemeriksaan.get(i).getIdPemeriksaan() == r.getIdPemeriksaan()) {
-                    jComboBox1.setSelectedIndex(i);
-                    String catatan = listPemeriksaan.get(i).getCatatan();
-                    txtCatatanPemerisaan.setText(catatan != null ? catatan : "");
-                    break;
+                    if (jComboBox1.getSelectedIndex() == i) {
+                        // sudah dipilih sebelumnya, event combo tidak akan otomatis
+                        // terpicu, jadi muat ulang secara manual
+                        muatResepUntukPemeriksaanTerpilih();
+                    } else {
+                        jComboBox1.setSelectedIndex(i); // akan memicu jComboBox1ActionPerformed
+                    }
+                    return;
                 }
             }
         }
-
-        bersihkanForm();
-        refreshTotalResep();   
     }
+
+    /**
+     * Klik pada baris tabel detail obat (jTable2) akan memuat data baris
+     * tersebut ke form input agar bisa diedit lalu diperbarui lewat tombol
+     * "Tambah Obat" (yang berubah menjadi mode "Update Obat").
+     */
+    private void tabelDetailMouseClicked(java.awt.event.MouseEvent evt) {
+        int row = jTable2.getSelectedRow();
+        if (row < 0 || listDetail == null || row >= listDetail.size()) return;
+
+        ResepDetail rd = listDetail.get(row);
+        detailAktif = rd;
+
+        sedangMengisiOtomatis = true;
+        pilihObatPadaCombo(rd.getIdObat());
+        Obat o = cariObatById(rd.getIdObat());
+        if (o != null) {
+            txtNamaObat.setText(o.getNamaObat());
+            txtHarga.setText(formatRupiah(rd.getHargaSatuan()));
+            // stok yang ditampilkan = stok saat ini + jumlah yang sudah dipakai baris ini,
+            // supaya user tahu batas maksimal jika ingin menambah jumlah.
+            txtStok.setText(String.valueOf(o.getStok() + rd.getJumlah()));
+        }
+        txtJumlah.setText(String.valueOf(rd.getJumlah()));
+        txtAturanPakai.setText(rd.getAturanPakai());
+        sedangMengisiOtomatis = false;
+
+        jTextField1.setText(formatRupiah(rd.getSubtotal()));
+        btnTambahObat.setText("Update Obat");
+    }
+
     private void cariData() {
         String keyword = txtCari.getText().trim();
 
-        if (keyword.isEmpty() || keyword.equalsIgnoreCase("Cari Resep.....")) {
+        if (keyword.isEmpty()) {
             loadMasterTable();
             return;
         }
@@ -521,17 +715,18 @@ public class FormResep extends javax.swing.JFrame {
 
         boolean ada = false;
         for (Resep r : listResepMaster) {
-            String idFormatted = formatIdResep(r.getIdResep());
+            String idResepStr = formatIdResep(r.getIdResep());
+            String idPemeriksaanStr = String.valueOf(r.getIdPemeriksaan());
             String tglStr = r.getTglResep() != null ? r.getTglResep().toString() : "";
 
             boolean cocok =
-                idFormatted.toLowerCase().contains(keyword.toLowerCase()) ||
-                String.valueOf(r.getIdPemeriksaan()).contains(keyword) ||
+                idResepStr.toLowerCase().contains(keyword.toLowerCase()) ||
+                idPemeriksaanStr.contains(keyword) ||
                 tglStr.contains(keyword);
 
             if (cocok) {
                 BigDecimal total = detailDao.getTotalByResepId(r.getIdResep());
-                model.addRow(new Object[]{idFormatted, r.getIdPemeriksaan(), tglStr, formatRupiah(total)});
+                model.addRow(new Object[]{idResepStr, r.getIdPemeriksaan(), tglStr, formatRupiah(total)});
                 ada = true;
             }
         }
@@ -563,10 +758,10 @@ public class FormResep extends javax.swing.JFrame {
         txtJumlah = new javax.swing.JTextField();
         jLabel7 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
-        txtAturanPakai = new javax.swing.JTextField();
+        txtStok = new javax.swing.JTextField();
         jLabel9 = new javax.swing.JLabel();
         txtSubtotal = new javax.swing.JTextField();
-        txtHargaSatuan = new javax.swing.JTextField();
+        txtAturanPakai = new javax.swing.JTextField();
         cmbIdObat = new javax.swing.JComboBox<>();
         btnSimpan = new javax.swing.JButton();
         btnHapus = new javax.swing.JButton();
@@ -580,6 +775,14 @@ public class FormResep extends javax.swing.JFrame {
         btnHapusObat = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
+        jLabel12 = new javax.swing.JLabel();
+        txtNamaObat = new javax.swing.JTextField();
+        jLabel13 = new javax.swing.JLabel();
+        txtHarga = new javax.swing.JTextField();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        jTable2 = new javax.swing.JTable();
+        jLabel14 = new javax.swing.JLabel();
+        jTextField1 = new javax.swing.JTextField();
 
         jButton1.setText("jButton1");
 
@@ -625,7 +828,7 @@ public class FormResep extends javax.swing.JFrame {
             }
         });
 
-        jLabel7.setText("Harga Satuan");
+        jLabel7.setText("Stok Obat");
 
         jLabel8.setText("Aturan Pakai");
 
@@ -637,9 +840,9 @@ public class FormResep extends javax.swing.JFrame {
             }
         });
 
-        txtHargaSatuan.addActionListener(new java.awt.event.ActionListener() {
+        txtAturanPakai.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtHargaSatuanActionPerformed(evt);
+                txtAturanPakaiActionPerformed(evt);
             }
         });
 
@@ -720,141 +923,175 @@ public class FormResep extends javax.swing.JFrame {
         jTable1.getTableHeader().setReorderingAllowed(false);
         jScrollPane1.setViewportView(jTable1);
 
+        jLabel12.setText("NamaObat");
+
+        txtNamaObat.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtNamaObatActionPerformed(evt);
+            }
+        });
+
+        jLabel13.setText("Harga Satuan");
+
+        jTable2.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "No", "ID", "Nama", "Total Harga"
+            }
+        ));
+        jScrollPane2.setViewportView(jTable2);
+
+        jLabel14.setText("Total Harga");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addGap(37, 37, 37)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                    .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(layout.createSequentialGroup()
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                    .addComponent(txtCatatanPemerisaan, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                        .addGap(18, 18, 18)
-                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                            .addComponent(txtTglResep, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 432, Short.MAX_VALUE)
-                                            .addComponent(jComboBox1, javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                            .addComponent(txtIdResep, javax.swing.GroupLayout.Alignment.LEADING))))
-                                .addGap(0, 0, Short.MAX_VALUE))
+                                .addComponent(btnSimpan, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(30, 30, 30)
+                                .addComponent(btnHapus, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(btnBatal, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(txtSubtotal)
+                            .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addGap(509, 509, 509))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addGap(0, 0, Short.MAX_VALUE)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(cmbIdObat, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(txtJumlah, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                            .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                            .addGap(121, 121, 121)))
+                                    .addComponent(txtAturanPakai, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 163, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(btnTambahObat, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(38, 38, 38)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(txtStok, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel12, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(txtNamaObat, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
                                     .addGroup(layout.createSequentialGroup()
-                                        .addComponent(btnSimpan, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addGap(30, 30, 30)
-                                        .addComponent(btnHapus, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 31, Short.MAX_VALUE)
-                                        .addComponent(btnBatal, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addComponent(txtSubtotal)
-                                    .addComponent(jLabel9, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                            .addComponent(btnTambahObat, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(txtAturanPakai, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                        .addComponent(btnHapusObat, javax.swing.GroupLayout.PREFERRED_SIZE, 286, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                        .addComponent(txtHargaSatuan, javax.swing.GroupLayout.PREFERRED_SIZE, 286, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                                                .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 285, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 282, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                                .addGroup(layout.createSequentialGroup()
-                                                    .addComponent(cmbIdObat, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                    .addGap(40, 40, 40)
-                                                    .addComponent(txtJumlah, javax.swing.GroupLayout.PREFERRED_SIZE, 285, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                                    .addComponent(jLabel11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, layout.createSequentialGroup()
-                                                        .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 40, Short.MAX_VALUE)
-                                                        .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 285, javax.swing.GroupLayout.PREFERRED_SIZE)))))))
-                                .addGap(18, 18, 18)))
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 125, Short.MAX_VALUE)
+                                            .addComponent(txtHarga, javax.swing.GroupLayout.Alignment.LEADING))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                            .addComponent(jLabel14, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                            .addComponent(jTextField1, javax.swing.GroupLayout.DEFAULT_SIZE, 125, Short.MAX_VALUE)))))
+                            .addComponent(txtCatatanPemerisaan)
+                            .addComponent(jLabel11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jLabel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(btnHapusObat, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jScrollPane2)
+                            .addGroup(layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 150, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(txtTglResep, javax.swing.GroupLayout.DEFAULT_SIZE, 444, Short.MAX_VALUE)
+                                    .addComponent(jComboBox1, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(txtIdResep))))
+                        .addGap(37, 37, 37)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, 400, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(btnCari, javax.swing.GroupLayout.PREFERRED_SIZE, 194, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 600, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addContainerGap(203, Short.MAX_VALUE))
+                            .addComponent(jScrollPane1))))
+                .addContainerGap(44, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addGap(39, 39, 39)
-                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 62, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel2)
-                    .addComponent(txtIdResep, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnCari))
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 43, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(txtCari, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(btnCari))
+                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jLabel2)
+                        .addComponent(txtIdResep, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel3)
-                            .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(18, 18, 18)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel4)
-                            .addComponent(txtTglResep, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(28, 28, 28)
-                        .addComponent(jLabel10)
+                            .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel3))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(txtCatatanPemerisaan, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 46, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(txtTglResep, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel4))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel10)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(txtCatatanPemerisaan, javax.swing.GroupLayout.PREFERRED_SIZE, 75, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel11, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(9, 9, 9)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
                                 .addComponent(jLabel5)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(cmbIdObat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(txtJumlah, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(cmbIdObat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel6)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtJumlah, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel8)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtAturanPakai, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabel8)
-                                    .addComponent(jLabel7)))
-                            .addComponent(jLabel6))
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(btnTambahObat)
+                                    .addComponent(btnHapusObat)))
                             .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabel12)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(txtAturanPakai, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(layout.createSequentialGroup()
-                                .addGap(12, 12, 12)
-                                .addComponent(txtHargaSatuan, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(txtNamaObat, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel7)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(txtStok, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(btnHapusObat)
-                                    .addComponent(btnTambahObat))))
-                        .addGap(18, 18, 18)
+                                    .addComponent(jLabel13)
+                                    .addComponent(jLabel14))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(txtHarga, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 130, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(jLabel9)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(txtSubtotal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(btnSimpan)
                             .addComponent(btnHapus)
                             .addComponent(btnBatal)))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addGap(19, 19, 19)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 565, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(363, Short.MAX_VALUE))
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 658, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap())
         );
 
         pack();
@@ -875,7 +1112,6 @@ public class FormResep extends javax.swing.JFrame {
 
     private void txtTglResepActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtTglResepActionPerformed
         // TODO add your handling code here:
-        hitungSubtotal();
     }//GEN-LAST:event_txtTglResepActionPerformed
 
     private void btnSimpanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSimpanActionPerformed
@@ -885,27 +1121,7 @@ public class FormResep extends javax.swing.JFrame {
 
     private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
         // TODO add your handling code here:
-        Pemeriksaan pe = getPemeriksaanTerpilih();
-        if (pe == null) return;
-
-        txtCatatanPemerisaan.setText(pe.getCatatan() != null ? pe.getCatatan() : "");
-
-        Resep existing = resepDao.getByIdPemeriksaan(pe.getIdPemeriksaan());
-        if (existing != null) {
-            resepAktif = existing;
-            txtIdResep.setText(formatIdResep(existing.getIdResep()));
-            txtTglResep.setText(existing.getTglResep() != null
-                ? existing.getTglResep().toString() : LocalDate.now().toString());
-            bersihkanForm();
-            refreshTotalResep();
-        } else {
-            resepAktif = null;
-            listDetail = new ArrayList<>();
-            txtIdResep.setText("(otomatis)");
-            txtTglResep.setText(LocalDate.now().toString());
-            bersihkanForm();
-            txtSubtotal.setText("Rp 0");
-        }
+        muatResepUntukPemeriksaanTerpilih();
     }//GEN-LAST:event_jComboBox1ActionPerformed
 
     private void btnHapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusActionPerformed
@@ -933,22 +1149,30 @@ public class FormResep extends javax.swing.JFrame {
 
     private void cmbIdObatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbIdObatActionPerformed
         // TODO add your handling code here:
-        isiHargaDariObatTerpilih();
+        isiDataObatTerpilih();
     }//GEN-LAST:event_cmbIdObatActionPerformed
 
-    private void txtHargaSatuanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtHargaSatuanActionPerformed
+    private void txtAturanPakaiActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtAturanPakaiActionPerformed
         // TODO add your handling code here:
-        hitungSubtotal();
-    }//GEN-LAST:event_txtHargaSatuanActionPerformed
+    }//GEN-LAST:event_txtAturanPakaiActionPerformed
 
     private void txtCatatanPemerisaanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtCatatanPemerisaanActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtCatatanPemerisaanActionPerformed
 
-    private void btnHapusObatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusObatActionPerformed
+    private void btnTambahObatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTambahObatActionPerformed
         // TODO add your handling code here:
         tambahObatKeResep();
+    }//GEN-LAST:event_btnTambahObatActionPerformed
+
+    private void btnHapusObatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnHapusObatActionPerformed
+        // TODO add your handling code here:
+        hapusObatDariResep();
     }//GEN-LAST:event_btnHapusObatActionPerformed
+
+    private void txtNamaObatActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtNamaObatActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtNamaObatActionPerformed
 
     /**
      * @param args the command line arguments
@@ -988,6 +1212,9 @@ public class FormResep extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
+    private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
@@ -997,13 +1224,18 @@ public class FormResep extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JTable jTable1;
+    private javax.swing.JTable jTable2;
+    private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField txtAturanPakai;
     private javax.swing.JTextField txtCari;
     private javax.swing.JTextField txtCatatanPemerisaan;
-    private javax.swing.JTextField txtHargaSatuan;
+    private javax.swing.JTextField txtHarga;
     private javax.swing.JTextField txtIdResep;
     private javax.swing.JTextField txtJumlah;
+    private javax.swing.JTextField txtNamaObat;
+    private javax.swing.JTextField txtStok;
     private javax.swing.JTextField txtSubtotal;
     private javax.swing.JTextField txtTglResep;
     // End of variables declaration//GEN-END:variables
